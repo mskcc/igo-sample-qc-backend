@@ -17,17 +17,26 @@ db.create_all()
 # db.session.commit()
 
 
+# @app.route("/")
+# def index():
+#     return "Welcome to Sample QC Reporting"
+
 @app.route("/")
-def index():
-    return "Welcome to Sample QC Reporting"
+def comment():
+	comments = Comment.query.all()
+
+	comments_response = []
+	for comment in comments:
+		comments_response.append(comment.serialize)
+		columnDefs.append(copy.deepcopy(possible_fields[column[0]]))
+	return comments_response
 
 
+	# submissions = Submission.query.filter(Submission.username == username).all()
 
-    # submissions = Submission.query.filter(Submission.username == username).all()
-
-    # submissions_response = []
-    # for submission in submissions:
-    #     submissions_response.append(submission.serialize)
-    #     # columnDefs.append(copy.deepcopy(possible_fields[column[0]]))
-    # return submissions_response
+	# submissions_response = []
+	# for submission in submissions:
+	    # submissions_response.append(submission.serialize)
+	#     # columnDefs.append(copy.deepcopy(possible_fields[column[0]]))
+	# return submissions_response
 
