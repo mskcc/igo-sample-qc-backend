@@ -29,7 +29,7 @@ def comment():
     comments_response = []
     for comment in comments:
         comments_response.append(comment.serialize)
-        columnDefs.append(copy.deepcopy(possible_fields[column[0]]))
+        # columnDefs.append(copy.deepcopy(possible_fields[column[0]]))
     return json.dumps(comments_response)
 
     # submissions = Submission.query.filter(Submission.username == username).all()
