@@ -1,8 +1,15 @@
 # app/__init__.py
 
+<<<<<<< Updated upstream
 from flask import Flask, request
 from datetime import datetime
+=======
+from flask import Flask, json, jsonify, request, make_response
+
+>>>>>>> Stashed changes
 import json
+import hashlib
+
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 
@@ -20,9 +27,11 @@ db.create_all()
 # db.session.commit()
 
 
-# @app.route("/")
-# def index():
-#     return "Welcome to Sample QC Reporting"
+@app.route("/checkVersion")
+def index():
+    return "Welcome to Sample QC Reporting"
+
+
 CORS(app)
 
 @app.route("/getComments")
@@ -37,7 +46,8 @@ def comment():
     for comment in comments:
         comments_response.append(comment.serialize)
         # columnDefs.append(copy.deepcopy(possible_fields[column[0]]))
-    return json.dumps(comments_response)
+    responseObject = {'comments': comments_response}
+    return make_response(jsonify(responseObject), 200, None)
 
 
 @app.route("/addComment", methods=['POST'])
@@ -67,13 +77,15 @@ def save_comment():
     db.session.add(comment)
     db.session.commit()
 
+
     comments = Comment.query.all()
     comments_response = []
     for x in comments:
         comments_response.append(x.serialize)
         # columnDefs.append(copy.deepcopy(possible_fields[column[0]]))
 
-    return json.dumps(comments_response)
+
+
     responseObject = {'comments': comments}
 
     return make_response(jsonify(responseObject), 200, None)
