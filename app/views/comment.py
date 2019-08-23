@@ -18,11 +18,8 @@ def get_comments():
     #     Submission.service_id == request.args.get("service_id"),
     # ).first()
 
-    comments = Comment.query.all()
-    comments_response = []
-    for comment in comments:
-        comments_response.append(comment.serialize)
-        # columnDefs.append(copy.deepcopy(possible_fields[column[0]]))
+    comments_response = load_comments(request.args.get("request_id"))
+    # columnDefs.append(copy.deepcopy(possible_fields[column[0]]))
     responseObject = {'comments': comments_response}
     return make_response(jsonify(responseObject), 200, None)
 
@@ -37,7 +34,6 @@ def save_comment():
     # TO CHANGE
     # payload = request.get_json()['data']
     # print(payload)
-    # form_values = payload['form_values']
     # submissions = Submission.query.filter(Submission.username == username).all()
 
     # parse payload
@@ -57,12 +53,24 @@ def save_comment():
     db.session.add(comment)
     db.session.commit()
 
-    comments = Comment.query.all()
-    comments_response = []
-    for x in comments:
-        comments_response.append(x.serialize)
-        # columnDefs.append(copy.deepcopy(possible_fields[column[0]]))
+    comments_response = load_comments()
+    # columnDefs.append(copy.deepcopy(possible_fields[column[0]]))
 
     responseObject = {'comments': comments_response}
 
     return make_response(jsonify(responseObject), 200, None)
+
+
+# -------- UTIL --------
+
+
+def load_comments():
+    # goes to Comment model/table and grabs everything in it
+    comments = Comment.query.all()
+    comments_response = []
+    for x in comments:
+        comments_response.append(x.serialize)
+    return comments_response
+
+
+# def load_comments_for_request():

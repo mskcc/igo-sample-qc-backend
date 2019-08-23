@@ -1,7 +1,7 @@
 import datetime
 from app import db
 
-
+# Model
 class Comment(db.Model):
     """
     Create a Comment table
