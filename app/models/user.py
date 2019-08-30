@@ -5,8 +5,8 @@ from flask_sqlalchemy import event
 
 
 # three roles:
-# user: can submit
-# member: can see all submissions
+# igo_user: can view their projects
+# member: can see all projects
 # super: can promote
 supers = [
     'bourquec',

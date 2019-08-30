@@ -14,12 +14,18 @@ db = SQLAlchemy(app)
 
 
 from app.models import Comment
+# added by anna
+# from app.models import User
 
 db.create_all()
 
 
 from .views.comment import comment
 app.register_blueprint(comment)
+
+# added by anna
+from .views.user import user
+app.register_blueprint(user)
 
 
 CORS(app)
