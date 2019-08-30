@@ -1,7 +1,10 @@
 # app/__init__.py
 
-from flask import Flask
+
+from flask import Flask, json, jsonify, request, make_response
+from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
+from datetime import datetime
 
 app = Flask(__name__)
 
@@ -11,22 +14,23 @@ db = SQLAlchemy(app)
 
 
 from app.models import Comment
+# added by anna
+# from app.models import User
 
 db.create_all()
 
-# db.session.commit()
+
+from .views.comment import comment
+app.register_blueprint(comment)
+
+# added by anna
+from .views.user import user
+app.register_blueprint(user)
 
 
-@app.route("/")
+CORS(app)
+
+
+@app.route("/checkVersion")
 def index():
     return "Welcome to Sample QC Reporting"
-
-
-
-    # submissions = Submission.query.filter(Submission.username == username).all()
-
-    # submissions_response = []
-    # for submission in submissions:
-    #     submissions_response.append(submission.serialize)
-    #     # columnDefs.append(copy.deepcopy(possible_fields[column[0]]))
-    # return submissions_response
