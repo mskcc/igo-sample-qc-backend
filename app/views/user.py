@@ -9,10 +9,14 @@ from flask_jwt_extended import (
     get_jwt_identity,
 )
 from app import db, jwt
-from app.models import User
+from app.models import User, BlacklistToken
+
 # from sqlalchemy import update
 import datetime
 import re
+
+# Might be necessary:
+# import ldap
 
 
 # initializes user blueprint as an extension of the application
@@ -27,8 +31,9 @@ def get_users():
     users_response = load_users_of_role(role)
     # columnDefs.append(copy.deepcopy(possible_fields[column[0]]))
     responseObject = {'users': users_response}
-    
+
     return make_response(jsonify(responseObject), 200, None)
+
 
 # login route
 @user.route('/login', methods=['POST'])
@@ -53,7 +58,7 @@ def login():
         # catches invalid credentials from LDAP call in user model
         except ldap.INVALID_CREDENTIALS:
             # log_error(
-                # "user " + username + " trying to login with invalid credentials"
+            # "user " + username + " trying to login with invalid credentials"
             # )
             responseObject = {
                 'message': 'Invalid username or password. Please try again.'
@@ -62,11 +67,10 @@ def login():
         # if the user is part of GRP_SKI_Haystack_NetIQ
         if is_authorized(result):
             # log_info('authorized user loaded: ' + username)
-           
 
             # Ignore for now, this is to load the user from the table or create a new one
             # user = load_username(username)
-            
+
             # Create our JWTs
             # default expiration 15 minutes
             access_token = create_access_token(identity=username)
@@ -79,9 +83,7 @@ def login():
 
             responseObject = {
                 'status': 'success',
-                'message': 'Hello, '
-                + username
-                + '. You have successfully logged in.',
+                'message': 'Hello, ' + username + '. You have successfully logged in.',
                 'access_token': access_token,
                 'refresh_token': refresh_token,
                 'username': username,
@@ -108,6 +110,41 @@ def login():
         return make_response(jsonify(responseObject)), 500
 
 
+@user.route('/logoutAccess')
+@jwt_required
+def logoutAccess():
+    jti = get_raw_jwt()['jti']
+    try:
+        revoked_token = BlacklistToken(jti=jti)
+        revoked_token.add()
+        responseObject = {
+            'status': 'success',
+            'message': 'Access token has been revoked',
+        }
+        return make_response(jsonify(responseObject)), 200
+
+    except Exception as e:
+        responseObject = {'status': 'fail', 'message': e}
+        return make_response(jsonify(responseObject)), 200
+
+
+@user.route('/logoutRefresh', methods=['GET'])
+@jwt_refresh_token_required
+def logoutRefresh():
+    jti = get_raw_jwt()['jti']
+    try:
+        revoked_token = BlacklistToken(jti=jti)
+        revoked_token.add()
+        responseObject = {
+            'status': 'success',
+            'message': 'Refresh token has been revoked',
+        }
+        return make_response(jsonify(responseObject)), 200
+
+    except Exception as e:
+        responseObject = {'status': 'fail', 'message': e}
+        return make_response(jsonify(responseObject)), 200
+
 
 # goes to User model/table and grabs everything in it
 def load_users():
@@ -120,8 +157,7 @@ def load_users():
 
 # goes to User model/table and grabs users of a specific role
 def load_users_of_role(role):
-    users = User.query.filter(
-        User.role == role)
+    users = User.query.filter(User.role == role)
     users_response = []
     for x in users:
         users_response.append(x.serialize)
@@ -131,6 +167,7 @@ def load_users_of_role(role):
 # checks whether user is in GRP_SKI_Haystack_NetIQ
 def is_authorized(result):
     return "GRP_SKI_Haystack_NetIQ" in format_result(result)
+
 
 # returns groups the user is a part of
 def format_result(result):
