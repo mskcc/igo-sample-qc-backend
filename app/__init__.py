@@ -28,9 +28,14 @@ db.create_all()
 from .views.comment import comment
 app.register_blueprint(comment)
 
+
 # added by anna
 from .views.user import user
 app.register_blueprint(user)
+
+from .views.qcresult import qcresult
+app.register_blueprint(qcresult)
+
 
 
 CORS(app)
