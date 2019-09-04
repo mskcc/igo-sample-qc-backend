@@ -2,6 +2,7 @@
 import datetime
 from app import db
 from flask_sqlalchemy import event
+import ldap
 
 
 # three roles:
@@ -22,6 +23,14 @@ members = [
     'youd',
 
 ]
+
+# ldap config to allow communication between this app and MSK LDAP server
+ldap.set_option(ldap.OPT_X_TLS_REQUIRE_CERT, ldap.OPT_X_TLS_NEVER) 
+
+def get_ldap_connection():
+    conn = ldap.initialize('ldaps://ldapha.mskcc.root.mskcc.org/')
+    conn.set_option(ldap.OPT_REFERRALS, 0)
+    return conn
 
 
 class User(db.Model):
@@ -56,6 +65,30 @@ class User(db.Model):
             'msk_group': self.msk_group,
             'role': self.role,
         }
+    
+    # if you call this from the view (like, User.login(username, password) it will pass the credentials
+    # on to LDAP and return either the result containing all the user's groups or a LDAP exception 
+    # that will be caught in the view
+
+    @staticmethod
+    def try_login(username, password):
+        conn = get_ldap_connection()
+
+        conn.simple_bind_s('%s@mskcc.org' % username, password)
+        # attrs = ['memberOf']
+        attrs = ['sAMAccountName', 'displayName', 'memberOf', 'title']
+        # get the groups the user is a part of
+        result = conn.search_s(
+            'DC=MSKCC,DC=ROOT,DC=MSKCC,DC=ORG',
+            ldap.SCOPE_SUBTREE,
+            'sAMAccountName='+ username,
+            attrs,
+        )
+        # if you want to see what comes back in the terminal
+        # print(result)
+
+        conn.unbind_s()
+        return result    
 
 
 def insert_initial_values(*args, **kwargs):
@@ -67,3 +100,7 @@ def insert_initial_values(*args, **kwargs):
 
 
 event.listen(User.__table__, 'after_create', insert_initial_values)
+
+
+
+
