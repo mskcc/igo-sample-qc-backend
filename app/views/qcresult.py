@@ -10,7 +10,7 @@ LIMS_PW = app.config["LIMS_PW"]
 qcresult = Blueprint('qcresult', __name__)
 
 
-
+# request = package.session
 s = requests.Session()
 # s.mount("https://", MyAdapter())
 
@@ -18,6 +18,7 @@ s = requests.Session()
 # suggestion: controller - getQCResult(request_id), service - getQCResult
 @qcresult.route("/qcresult/rna")
 def qcresult_rna():
+    # the API endpoint 
     r = s.get(
                 # LIMS_API_ROOT + "/LimsRest/getProjectQc?project='09938'",
                 LIMS_API_ROOT + "/LimsRest/getPickListValues?list=Recipe",

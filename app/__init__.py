@@ -24,8 +24,7 @@ def check_if_token_in_blacklist(decrypted_token):
 
 
 from app.models import Comment, BlacklistToken, User
-# added by anna
-# from app.models import User
+
 
 db.create_all()
 
@@ -33,14 +32,14 @@ db.create_all()
 from .views.comment import comment
 app.register_blueprint(comment)
 
-
-# added by anna
 from .views.user import user
 app.register_blueprint(user)
 
 from .views.qcresult import qcresult
 app.register_blueprint(qcresult)
 
+from .views.tree import tree
+app.register_blueprint(tree)
 
 
 CORS(app)
