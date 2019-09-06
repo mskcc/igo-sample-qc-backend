@@ -15,11 +15,14 @@ s = requests.Session()
 
 
 # returns request level information including a list of samples in the request
-@tree.route("/tree/requestId", methods=['GET'])
+@tree.route("/tree", methods=['GET'])
 def tree_request_id():
+    
+    request_id = request.args.get("request_id")
+
     # the API endpoint
     r = s.get(
-				LIMS_API_ROOT + "/LimsRest/api/getRequestSamples?request=08304",
+				LIMS_API_ROOT + "/LimsRest/api/getRequestSamples?request=" + request_id,
                 auth=(LIMS_USER, LIMS_PW),
                 verify=False,
             )
