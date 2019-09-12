@@ -35,8 +35,8 @@ app.register_blueprint(comment)
 from .views.user import user
 app.register_blueprint(user)
 
-from .views.qcresult import qcresult
-app.register_blueprint(qcresult)
+from .views.qc_report import qc_report
+app.register_blueprint(qc_report)
 
 from .views.tree import tree
 app.register_blueprint(tree)
