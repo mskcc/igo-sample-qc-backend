@@ -136,3 +136,11 @@ libraryColumns = {
         "readOnly": True,
     },
 }
+
+dnaOrder = ["Recipe", "IgoQcRecommendation", "Comments", "SampleId", "OtherSampleId", "Concentration", "ConcentrationUnits", "Volume", "TotalMass", "DIN", "SpecimenType", "TumorOrNormal", "Preservation"]
+
+rnaOrder = ["Recipe", "IgoQcRecommendation", "Comments", "SampleId", "OtherSampleId", "Concentration", "ConcentrationUnits", "Volume", "TotalMass", "RIN", "DV200", "Preservation", "RQN"]
+
+libraryOrder = ["Recipe", "IgoQcRecommendation", "Comments", "SampleId", "OtherSampleId", "AvgSize", "Concentration", "ConcentrationUnits", "Volume", "TotalMass", "TumorOrNormal"]
+
+
