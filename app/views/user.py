@@ -16,7 +16,7 @@ import datetime
 import re
 
 # Might be necessary:
-# import ldap
+import ldap
 
 
 # initializes user blueprint as an extension of the application
