@@ -3,6 +3,9 @@ import requests
 import copy
 from app import app, constants
 
+# MORE IMPORTANT THAN IT SHOULD BE
+app.config['JSON_SORT_KEYS'] = False
+# _________________________________
 
 LIMS_API_ROOT = app.config["LIMS_API_ROOT"]
 LIMS_USER = app.config["LIMS_USER"]
@@ -66,51 +69,110 @@ def get_qc_report_samples():
     if r.status_code == 200:
         # assemble table data
         lims_data = r.json()
+        columnFeatures = dict()
         tables = dict()
         for field in lims_data:
-           
+
             if field == "dnaReportSamples":
-                columnFeatures = Merge(constants.sharedColumns, constants.dnaColumns)
-                tables[field] = build_table(field, lims_data[field], columnFeatures)
+                columnFeatures = mergeColumns(
+                    constants.sharedColumns, constants.dnaColumns
+                )
+                tables[field] = build_table(
+                    field, lims_data[field], columnFeatures, constants.dnaOrder
+                )
 
             if field == "rnaReportSamples":
-                columnFeatures = Merge(constants.sharedColumns, constants.rnaColumns)
-                tables[field] = build_table(field, lims_data[field], columnFeatures)
+                columnFeatures = mergeColumns(
+                    constants.sharedColumns, constants.rnaColumns
+                )
+                tables[field] = build_table(
+                    field, lims_data[field], columnFeatures, constants.rnaOrder
+                )
+
             if field == "libraryReportSamples":
-                columnFeatures = Merge(
+                columnFeatures = mergeColumns(
                     constants.sharedColumns, constants.libraryColumns
                 )
-                tables[field] = build_table(field, lims_data[field], columnFeatures)
-        # print(tables)
+                tables[field] = build_table(
+                    field, lims_data[field], columnFeatures, constants.libraryOrder
+                )
 
-        return jsonify(tables)
+        return make_response((jsonify(tables)), 200, None)
     else:
-  
+
         response = make_response(r.text, r.status_code, None)
         return response
 
 
-    response = make_response(return_text)
-    return response
-
-
 # -------------UTIL-------------
-# Python code to merge dict using a single
+# Python code to mergeColumns dict using a single
 # expression
-def Merge(dict1, dict2):
+def mergeColumns(dict1, dict2):
     res = {**dict1, **dict2}
     return res
 
 
-def build_table(reportTable, samples, columnFeatures):
+def build_table(reportTable, samples, columnFeatures, order):
     responseColumns = dict()
-    responseSamples = copy.deepcopy(samples)
-    for column in samples[0]:
-        try:
-            responseColumns[column] = columnFeatures[column]
-        except:
-            print(column + " not found in expected columns for " + reportTable)
-            for sample in responseSamples:
-                sample.pop(column)
+    responseHeaders = []
+    responseSamples = []
 
-    return {"data": responseSamples, "columnFeatures": responseColumns}
+    if not samples:
+        return {}
+    else:
+        # sort!
+        for orderedColumn in order:
+            try:
+
+                if responseColumns:
+
+                    responseColumns.update(
+                        {orderedColumn: columnFeatures[orderedColumn]}
+                    )
+                else:
+                    responseColumns[orderedColumn] = columnFeatures[orderedColumn]
+                if orderedColumn == "Concentration":
+                    responseHeaders.append(
+                        columnFeatures[orderedColumn]["columnHeader"]
+                        + ' in '
+                        + samples[0]['concentrationUnits']
+                    )
+                else:
+                    responseHeaders.append(
+                        columnFeatures[orderedColumn]["columnHeader"]
+                    )
+            except:
+                # If we didn't expect it to be returned from LIMS, delete it.
+                print(
+                    orderedColumn + " not found in expected columns for " + reportTable
+                )
+                try:
+                    for sample in responseSamples:
+                        sample.pop(orderedColumn)
+                except:
+                    # Excpected column not found in LIMS result, return it to FE anyway.
+                    responseColumns[orderedColumn] = {}
+                    responseHeaders.append(
+                        columnFeatures[orderedColumn]["columnHeader"]
+                    )
+
+        for sample in samples:
+            responseSample = {}
+            for orderedColumn in order:
+                try:
+                    responseSample[columnFeatures[orderedColumn]["field"]] = sample[
+                        orderedColumn[0].lower() + orderedColumn[1:]
+                    ]
+                except:
+                    print(orderedColumn)
+                    print(sample)
+
+                    # Excpected column not found in LIMS result, return it to FE anyway.
+                    responseSample[columnFeatures[orderedColumn]["field"]] = ""
+            responseSamples.append(responseSample)
+
+        return {
+            "data": responseSamples,
+            "columnFeatures": responseColumns,
+            "columnHeaders": responseHeaders,
+        }

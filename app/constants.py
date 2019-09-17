@@ -1,72 +1,78 @@
 sharedColumns = {
-    "sampleId": {
+    "SampleId": {
         "limsField": "SampleId",
         "field": "sampleId",
         "columnHeader": "IGO ID",
         "readOnly": True,
     },
-    "otherSampleId": {
+    "OtherSampleId": {
         "limsField": "OtherSampleId",
         "field": "otherSampleId",
         "columnHeader": "Sample Name",
         "readOnly": True,
     },
-    # "altId": {"limsField": "AltId", "field": "altId", "columnHeader": "AltId","readOnly":True,},
-    "userSampleID": {
+    # "UserSampleID": "altId": {"limsField": "AltId", "field": "altId", "columnHeader": "AltId","readOnly":True,},
+    "UserSampleID": {
         "limsField": "UserSampleID",
         "field": "userSampleID",
         "columnHeader": "UserSampleID",
         "readOnly": True,
     },
-    "concentrationUnits": {
+    "ConcentrationUnits": {
         "limsField": "ConcentrationUnits",
         "field": "concentrationUnits",
         "columnHeader": "ConcentrationUnits",
         "readOnly": True,
     },
-    "preservation": {
+    "Preservation": {
         "limsField": "Preservation",
         "field": "preservation",
         "columnHeader": "Preservation",
         "readOnly": True,
     },
-    "recipe": {
+    "Recipe": {
         "limsField": "Recipe",
         "field": "recipe",
         "columnHeader": "Recipe",
         "readOnly": True,
     },
-    "igoQcRecommendation": {
+    "IgoQcRecommendation": {
         "limsField": "IgoQcRecommendation",
         "field": "igoQcRecommendation",
-        "columnHeader": "IgoQcRecommendation",
+        "columnHeader": "IGO QC Recommendation",
         "readOnly": True,
     },
-    "comments": {
+    "InvestigatorDecision": {
+        "limsField": "InvestigatorDecision",
+        "field": "investigatorDecision",
+        "columnHeader": "Investigator Decision",
+        "readOnly": True,
+    },
+    "Comments": {
         "limsField": "Comments",
         "field": "comments",
         "columnHeader": "Comments",
         "readOnly": True,
     },
-    "dateCreated": {
+    "DateCreated": {
         "limsField": "DateCreated",
         "field": "dateCreated",
         "columnHeader": "Date Created",
         "readOnly": True,
     },
-    "concentration": {
+    "Concentration": {
         "limsField": "Concentration",
         "field": "concentration",
         "columnHeader": "Concentration",
         "readOnly": True,
     },
-    "volume": {
+    "Volume": {
         "limsField": "Volume",
         "field": "volume",
         "columnHeader": "Volume",
         "readOnly": True,
     },
-    "totalMass": {
+    "TotalMass": {
         "limsField": "TotalMass",
         "field": "totalMass",
         "columnHeader": "Total Mass",
@@ -75,25 +81,25 @@ sharedColumns = {
 }
 
 dnaColumns = {
-    "din": {
+    "Din": {
         "limsField": "Din",
         "field": "din",
         "columnHeader": "Din",
         "readOnly": True,
     },
-    "percentHuman": {
+    "PercentHuman": {
         "limsField": "PercentHuman",
         "field": "percentHuman",
         "columnHeader": "%Human",
         "readOnly": True,
     },
-    "tumorOrNormal": {
+    "TumorOrNormal": {
         "limsField": "TumorOrNormal",
         "field": "tumorOrNormal",
         "columnHeader": "Tumor/Normal",
         "readOnly": True,
     },
-    "specimenType": {
+    "SpecimenType": {
         "limsField": "SpecimenType",
         "field": "specimenType",
         "columnHeader": "CMO Sample Type",
@@ -102,19 +108,19 @@ dnaColumns = {
 }
 
 rnaColumns = {
-    "rin": {
+    "Rin": {
         "limsField": "Rin",
         "field": "rin",
         "columnHeader": "RIN",
         "readOnly": True,
     },
-    "rqn": {
+    "Rqn": {
         "limsField": "Rqn",
         "field": "rqn",
         "columnHeader": "RQN",
         "readOnly": True,
     },
-    "dV200": {
+    "DV200": {
         "limsField": "DV200",
         "field": "dV200",
         "columnHeader": "DV200",
@@ -123,13 +129,13 @@ rnaColumns = {
 }
 
 libraryColumns = {
-    "avgSize": {
+    "AvgSize": {
         "limsField": "AvgSize",
         "field": "avgSize",
         "columnHeader": "Average Size",
         "readOnly": True,
     },
-    "tumorOrNormal": {
+    "TumorOrNormal": {
         "limsField": "TumorOrNormal",
         "field": "tumorOrNormal",
         "columnHeader": "Tumor/Normal",
@@ -137,10 +143,49 @@ libraryColumns = {
     },
 }
 
-dnaOrder = ["Recipe", "IgoQcRecommendation", "Comments", "InvestigatorDecision", "SampleId", "OtherSampleId", "Concentration", "ConcentrationUnits", "Volume", "TotalMass", "DIN", "SpecimenType", "HumanPercentage", "TumorOrNormal", "Preservation"]
+dnaOrder = [
+    "Recipe",
+    "IgoQcRecommendation",
+    "Comments",
+    "InvestigatorDecision",
+    "SampleId",
+    "OtherSampleId",
+    "Concentration",
+    "Volume",
+    "TotalMass",
+    "Din",
+    "SpecimenType",
+    "PercentHuman",
+    "TumorOrNormal",
+    "Preservation",
+]
 
-rnaOrder = ["Recipe", "IgoQcRecommendation", "Comments", "InvestigatorDecision", "SampleId", "OtherSampleId", "Concentration", "ConcentrationUnits", "Volume", "TotalMass", "RIN", "DV200", "Preservation", "RQN"]
+rnaOrder = [
+    "Recipe",
+    "IgoQcRecommendation",
+    "Comments",
+    "InvestigatorDecision",
+    "SampleId",
+    "OtherSampleId",
+    "Concentration",
+    "Volume",
+    "TotalMass",
+    "Rin",
+    "DV200",
+    "Preservation",
+    "Rqn",
+]
 
-libraryOrder = ["Recipe", "IgoQcRecommendation", "Comments", "InvestigatorDecision", "SampleId", "OtherSampleId", "AvgSize", "Concentration", "ConcentrationUnits", "Volume", "TotalMass", "TumorOrNormal"]
-
-
+libraryOrder = [
+    "Recipe",
+    "IgoQcRecommendation",
+    "Comments",
+    "InvestigatorDecision",
+    "SampleId",
+    "OtherSampleId",
+    "AvgSize",
+    "Concentration",
+    "Volume",
+    "TotalMass",
+    "TumorOrNormal",
+]
