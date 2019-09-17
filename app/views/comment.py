@@ -14,10 +14,16 @@ comment = Blueprint('comment', __name__)
 def get_comments():
 
     request_id = request.args.get("request_id")
+    # check if there are comments for that request
     comments_response = load_comments_for_request(request_id)
     # columnDefs.append(copy.deepcopy(possible_fields[column[0]]))
-    responseObject = {'comments': comments_response}
-    return make_response(jsonify(responseObject), 200, None)
+    # if there are no comments for the request
+    if not comments_response:
+        return make_response('no comments', 200, None)
+    # there are comments for the request
+    else:
+        responseObject = {'comments': comments_response}
+        return make_response(jsonify(responseObject), 200, None)
 
 # accepts a request payload, the new comment, saves it to the DB, and returns comments with the same request_id
 @comment.route("/addComment", methods=['POST'])
