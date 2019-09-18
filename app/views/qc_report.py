@@ -31,9 +31,27 @@ def get_request_samples():
         auth=(LIMS_USER, LIMS_PW),
         verify=False,
     )
-    print(r)
+    # print(r)
     if r.status_code == 200:
         return_text += r.text
+        lims_data = r.json()
+        # print(lims_data)
+        responseData = {}
+
+        if "samples" in lims_data:
+            responseData["requestId"] = lims_data["requestId"]
+            responseData["labHeadName"] = lims_data["labHeadName"]
+            responseData["investigatorName"] = lims_data["investigatorName"]
+            responseData["dataAnalystName"] = lims_data["dataAnalystName"]
+            responseData["projectManagerName"] = lims_data["projectManagerName"]
+            responseData["samples"] = []
+            # we only need Investigator Sample Ids
+            for sample in lims_data["samples"]:
+                responseData["samples"].append(sample["investigatorSampleId"])
+
+            return make_response(responseData, r.status_code, None)
+        else:
+            return make_response("Request not found", 404, None)
     else:
 
         response = make_response(r.text, r.status_code, None)
@@ -51,6 +69,7 @@ def get_qc_report_samples():
     # gets payload
     payload = request.get_json()["data"]
     # parses payload into params
+    # print(payload)
     request_id = payload["request"]
     samples = payload["samples"]
     # puts the params in the dictionary
@@ -113,7 +132,7 @@ def mergeColumns(dict1, dict2):
 
 
 def build_table(reportTable, samples, columnFeatures, order):
-    responseColumns = dict()
+    responseColumns = []
     responseHeaders = []
     responseSamples = []
 
@@ -124,19 +143,14 @@ def build_table(reportTable, samples, columnFeatures, order):
         for orderedColumn in order:
             try:
 
-                if responseColumns:
-
-                    responseColumns.update(
-                        {orderedColumn: columnFeatures[orderedColumn]}
-                    )
-                else:
-                    responseColumns[orderedColumn] = columnFeatures[orderedColumn]
+                responseColumns.append(columnFeatures[orderedColumn])
                 if orderedColumn == "Concentration":
                     responseHeaders.append(
                         columnFeatures[orderedColumn]["columnHeader"]
                         + ' in '
                         + samples[0]['concentrationUnits']
                     )
+
                 else:
                     responseHeaders.append(
                         columnFeatures[orderedColumn]["columnHeader"]
@@ -160,15 +174,34 @@ def build_table(reportTable, samples, columnFeatures, order):
             responseSample = {}
             for orderedColumn in order:
                 try:
-                    responseSample[columnFeatures[orderedColumn]["field"]] = sample[
-                        orderedColumn[0].lower() + orderedColumn[1:]
-                    ]
-                except:
-                    print(orderedColumn)
-                    print(sample)
 
+                    if orderedColumn == "IgoQcRecommendation":
+                        recommendation = sample[
+                            orderedColumn[0].lower() + orderedColumn[1:]
+                        ].lower()
+                        responseSample[columnFeatures[orderedColumn]["data"]] = (
+                            "<div class=%s>%s</div>"
+                            % (
+                                recommendation,
+                                sample[orderedColumn[0].lower() + orderedColumn[1:]],
+                            )
+                        )
+                    elif orderedColumn == "InvestigatorDecision":
+                        if columnFeatures[orderedColumn]["data"] in sample:
+                            responseSample[
+                                columnFeatures[orderedColumn]["data"]
+                            ] = sample[orderedColumn[0].lower() + orderedColumn[1:]]
+                        else:
+
+                            responseSample[columnFeatures[orderedColumn]["data"]] = None
+                            # print(responseSample)
+                    else:
+                        responseSample[columnFeatures[orderedColumn]["data"]] = sample[
+                            orderedColumn[0].lower() + orderedColumn[1:]
+                        ]
+                except:
                     # Excpected column not found in LIMS result, return it to FE anyway.
-                    responseSample[columnFeatures[orderedColumn]["field"]] = ""
+                    responseSample[columnFeatures[orderedColumn]["data"]] = ""
             responseSamples.append(responseSample)
 
         return {
