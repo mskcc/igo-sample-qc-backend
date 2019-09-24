@@ -69,7 +69,7 @@ def login():
             # log_info('authorized user loaded: ' + username)
 
             # Ignore for now, this is to load the user from the table or create a new one
-            # user = load_username(username)
+            user = load_username(username)
 
             # Create our JWTs
             # default expiration 15 minutes
@@ -86,7 +86,8 @@ def login():
                 'message': 'Hello, ' + username + '. You have successfully logged in.',
                 'access_token': access_token,
                 'refresh_token': refresh_token,
-                'username': username,
+                'username': user.username,
+                # 'userTitle': user.title,
             }
             return make_response(jsonify(responseObject), 200, None)
         else:
@@ -162,6 +163,10 @@ def load_users_of_role(role):
     for x in users:
         users_response.append(x.serialize)
     return users_response
+
+
+def load_username(username):
+    return User.query.filter_by(username=username).first()
 
 
 # checks whether user is in GRP_SKI_Haystack_NetIQ

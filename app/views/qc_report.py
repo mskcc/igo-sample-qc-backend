@@ -11,11 +11,17 @@ LIMS_API_ROOT = app.config["LIMS_API_ROOT"]
 LIMS_USER = app.config["LIMS_USER"]
 LIMS_PW = app.config["LIMS_PW"]
 
+LIMS_REST_API_ROOT = app.config["LIMS_REST_API_ROOT"]
+LIMS_API_USER = app.config["LIMS_API_USER"]
+LIMS_API_PW = app.config["LIMS_API_PW"]
+LIMS_GUID = app.config["LIMS_GUID"]
+
 qc_report = Blueprint("qc_report", __name__)
 
 
 # request = package.session
 s = requests.Session()
+lims_headers = {'guid': LIMS_GUID}
 # s.mount("https://", MyAdapter())
 
 
@@ -61,7 +67,6 @@ def get_request_samples():
     return response
 
 
-# add a new POST route /getQcReportSamples that
 @qc_report.route("/getQcReportSamples", methods=["POST"])
 def get_qc_report_samples():
     # makes an empty dictionary
@@ -82,6 +87,12 @@ def get_qc_report_samples():
         auth=(LIMS_USER, LIMS_PW),
         verify=False,
         data=data,
+    )
+
+    dnar = s.get(
+        LIMS_API_ROOT + "/api/getRequestSamples?request=" + request_id,
+        auth=(LIMS_USER, LIMS_PW),
+        verify=False,
     )
     # print(constants.allColumns)
     return_text = ""
@@ -121,6 +132,38 @@ def get_qc_report_samples():
 
         response = make_response(r.text, r.status_code, None)
         return response
+
+
+# r = s.get(
+#        LIMS_REST_API_ROOT + "/datarecord",
+#        headers=headers,
+#        auth=(LIMS_API_USER, LIMS_API_PW),
+#        params={
+#            "datatype": "QcReportDna",
+#            "field": "OtherSampleId",
+#            "values": ["AdCCDK_1T", "AdCCDK_7T", "AdCCHW"],
+#        },
+#        verify=False,
+#    )
+
+
+@qc_report.route("/getAttachments", methods=["GET"])
+def get_qc_report_attachments():
+    r = s.get(
+        LIMS_REST_API_ROOT + "/attachment",
+        headers=lims_headers,
+        auth=(LIMS_API_USER, LIMS_API_PW),
+        params={
+            "datatype": "Attachment",
+            "fields": {
+                "CreatedBy": "chend"
+            },
+        },
+        verify=False,
+    )
+    print(r)
+
+    return r.text
 
 
 # -------------UTIL-------------
