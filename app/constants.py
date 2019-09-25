@@ -5,6 +5,12 @@ sharedColumns = {
         "columnHeader": "IGO ID",
         "readOnly": "true",
     },
+     "RecordId": {
+        "limsField": "RecordId",
+        "data": "recordId",
+        "columnHeader": "Record ID",
+        "readOnly": "true",
+    },
     "OtherSampleId": {
         "limsField": "OtherSampleId",
         "data": "otherSampleId",
@@ -42,14 +48,14 @@ sharedColumns = {
         "columnHeader": "IGO Recommendation",
         "readOnly": "true",
         "renderer": "html",
-        "checkedTemplate": "false",
-        "uncheckedTemplate": "",
     },
     "InvestigatorDecision": {
         "limsField": "InvestigatorDecision",
         "data": "investigatorDecision",
         "columnHeader": "Investigator Decision",
-        "type": "checkbox",
+        "type": "dropdown",
+        "trimDropdown": "false",
+        "picklistName": "InvestigatorDecision",
     },
     "Comments": {
         "limsField": "Comments",
@@ -146,6 +152,7 @@ libraryColumns = {
     },
 }
 
+ # last column is always RecordId. Needed to set investigator decision efficiently
 dnaOrder = [
     "Recipe",
     "IgoQcRecommendation",
@@ -161,6 +168,7 @@ dnaOrder = [
     "PercentHuman",
     "TumorOrNormal",
     "Preservation",
+    "RecordId"
 ]
 
 rnaOrder = [
@@ -177,6 +185,7 @@ rnaOrder = [
     "DV200",
     "Preservation",
     "Rqn",
+    "RecordId"
 ]
 
 libraryOrder = [
@@ -191,4 +200,5 @@ libraryOrder = [
     "Volume",
     "TotalMass",
     "TumorOrNormal",
+    "RecordId"
 ]

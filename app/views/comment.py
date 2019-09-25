@@ -144,10 +144,12 @@ def load_comments_for_request(request_id):
 
 def save_comment(payload):
     print(payload)
-    if ',' in payload["reports"]:
-        qc_table = ",".join(payload["reports"])
-    else:
-        qc_table = payload["reports"]
+    # if ',' in payload["reports"]:
+    #     print(payload["reports"])
+    #     qc_table = ",".join(payload["reports"])
+    #     print(qc_table)
+    # else:
+    qc_table = payload["reports"]
 
     comment = Comment(
         username=payload["username"],

@@ -1,5 +1,6 @@
 from flask import Flask, Blueprint, json, jsonify, request, make_response
 import requests
+import sys
 import copy
 from app import app, constants
 
@@ -26,6 +27,7 @@ lims_headers = {'guid': LIMS_GUID}
 
 
 # returns request level information including a list of samples in the request
+# queries IGO LIMS REST
 @qc_report.route("/getRequestSamples", methods=['GET'])
 def get_request_samples():
     return_text = ""
@@ -67,6 +69,7 @@ def get_request_samples():
     return response
 
 
+# queries SAPIO LIMS REST
 @qc_report.route("/getQcReportSamples", methods=["POST"])
 def get_qc_report_samples():
     # makes an empty dictionary
@@ -81,7 +84,22 @@ def get_qc_report_samples():
     data['request'] = request_id
     data['samples'] = samples
 
+    # params =
+
     # calls API endpoint and passes in necessary params
+
+    # r = s.get(
+    #        LIMS_REST_API_ROOT + "/datarecord",
+    #        headers=headers,
+    #        auth=(LIMS_API_USER, LIMS_API_PW),
+    #        data={
+    #            "datatype": "QcReportDna",
+    #            "field": "OtherSampleId",
+    #            "values": [AdCCDK_1T, AdCCDK_7T, AdCCHW],
+    #        },
+    #        verify=False,
+    #    )
+
     r = s.post(
         LIMS_API_ROOT + "/getQcReportSamples",
         auth=(LIMS_USER, LIMS_PW),
@@ -89,11 +107,11 @@ def get_qc_report_samples():
         data=data,
     )
 
-    dnar = s.get(
-        LIMS_API_ROOT + "/api/getRequestSamples?request=" + request_id,
-        auth=(LIMS_USER, LIMS_PW),
-        verify=False,
-    )
+    # dnar = s.get(
+    #     LIMS_API_ROOT + "/api/getRequestSamples?request=" + request_id,
+    #     auth=(LIMS_USER, LIMS_PW),
+    #     verify=False,
+    # )
     # print(constants.allColumns)
     return_text = ""
     if r.status_code == 200:
@@ -141,7 +159,7 @@ def get_qc_report_samples():
 #        params={
 #            "datatype": "QcReportDna",
 #            "field": "OtherSampleId",
-#            "values": ["AdCCDK_1T", "AdCCDK_7T", "AdCCHW"],
+#            "values": [AdCCDK_1T, AdCCDK_7T, AdCCHW],
 #        },
 #        verify=False,
 #    )
@@ -153,12 +171,7 @@ def get_qc_report_attachments():
         LIMS_REST_API_ROOT + "/attachment",
         headers=lims_headers,
         auth=(LIMS_API_USER, LIMS_API_PW),
-        params={
-            "datatype": "Attachment",
-            "fields": {
-                "CreatedBy": "chend"
-            },
-        },
+        params={"datatype": "Attachment", "fields": {"CreatedBy": "chend"}},
         verify=False,
     )
     print(r)
@@ -178,36 +191,56 @@ def build_table(reportTable, samples, columnFeatures, order):
     responseColumns = []
     responseHeaders = []
     responseSamples = []
-
+    print(samples)
     if not samples:
         return {}
     else:
         # sort!
         for orderedColumn in order:
             try:
+                if orderedColumn in columnFeatures:
 
-                responseColumns.append(columnFeatures[orderedColumn])
-                if orderedColumn == "Concentration":
-                    responseHeaders.append(
-                        columnFeatures[orderedColumn]["columnHeader"]
-                        + ' in '
-                        + samples[0]['concentrationUnits']
-                    )
+                    if "picklistName" in columnFeatures[orderedColumn]:
+                        print(responseColumns)
+                        columnFeatures[orderedColumn]["source"] = get_picklist(
+                            columnFeatures[orderedColumn]["picklistName"]
+                        )
+                        responseColumns.append(columnFeatures[orderedColumn])
+                    else:
+                        responseColumns.append(columnFeatures[orderedColumn])
 
-                else:
-                    responseHeaders.append(
-                        columnFeatures[orderedColumn]["columnHeader"]
-                    )
+                    if orderedColumn == "Concentration":
+                        responseHeaders.append(
+                            columnFeatures[orderedColumn]["columnHeader"]
+                            + ' in '
+                            + samples[0]['concentrationUnits']
+                        )
+
+                    #     print(columnFeatures[orderedColumn])
+                    #     responseColumns[orderedColumn]["source"] = get_picklist(
+                    #         columnFeatures[orderedColumn]["picklistName"]
+                    #     )
+                    #     print(get_picklist(columnFeatures[orderedColumn]["picklistName"]))
+
+                    else:
+                        responseHeaders.append(
+                            columnFeatures[orderedColumn]["columnHeader"]
+                        )
+
             except:
                 # If we didn't expect it to be returned from LIMS, delete it.
                 print(
                     orderedColumn + " not found in expected columns for " + reportTable
                 )
+                print("Unexpected error:%s" % (sys.exc_info()[0]))
+
                 try:
+                    # delete field from sample if we don't expect it in the FE
                     for sample in responseSamples:
                         sample.pop(orderedColumn)
                 except:
-                    # Excpected column not found in LIMS result, return it to FE anyway.
+                    #
+                    # if sample.pop failed, excpected column not found in LIMS result, return it to FE anyway.
                     responseColumns[orderedColumn] = {}
                     responseHeaders.append(
                         columnFeatures[orderedColumn]["columnHeader"]
@@ -235,9 +268,7 @@ def build_table(reportTable, samples, columnFeatures, order):
                                 columnFeatures[orderedColumn]["data"]
                             ] = sample[orderedColumn[0].lower() + orderedColumn[1:]]
                         else:
-
                             responseSample[columnFeatures[orderedColumn]["data"]] = None
-                            # print(responseSample)
                     else:
                         responseSample[columnFeatures[orderedColumn]["data"]] = sample[
                             orderedColumn[0].lower() + orderedColumn[1:]
@@ -252,3 +283,21 @@ def build_table(reportTable, samples, columnFeatures, order):
             "columnFeatures": responseColumns,
             "columnHeaders": responseHeaders,
         }
+
+
+def get_picklist(listname):
+    # if uwsgi.cache_exists(listname):
+    #     return pickle.loads(uwsgi.cache_get(listname))
+    # else:
+    print("listname" + listname)
+    r = s.get(
+        LIMS_API_ROOT + "/getPickListValues?list=%s" % listname,
+        auth=(LIMS_USER, LIMS_PW),
+        verify=False,
+    )
+    picklist = []
+    for value in json.loads(r.content.decode('utf-8')):
+        picklist.append(value)
+    # uwsgi.cache_set(listname, pickle.dumps(picklist), 900)
+    # return pickle.loads(uwsgi.cache_get(listname))
+    return picklist
