@@ -43,7 +43,7 @@ def get_request_samples():
     if r.status_code == 200:
         return_text += r.text
         lims_data = r.json()
-        # print(lims_data)
+
         responseData = {}
 
         if "samples" in lims_data:
@@ -119,6 +119,7 @@ def get_qc_report_samples():
         lims_data = r.json()
         columnFeatures = dict()
         tables = dict()
+        # print(lims_data)
         for field in lims_data:
 
             if field == "dnaReportSamples":
@@ -144,6 +145,8 @@ def get_qc_report_samples():
                 tables[field] = build_table(
                     field, lims_data[field], columnFeatures, constants.libraryOrder
                 )
+            if field == "attachments":
+                tables[field] = build_attachment_list(field, lims_data[field])
 
         return make_response((jsonify(tables)), 200, None)
     else:
@@ -181,6 +184,8 @@ def set_qc_investigator_decision():
         data=json.dumps(payload),
     )
 
+    # print(r.text)
+
     # r = s.get(
     #     LIMS_REST_API_ROOT + "/attachment",
     #     headers=lims_headers,
@@ -195,13 +200,13 @@ def set_qc_investigator_decision():
 
 @qc_report.route("/getAttachments", methods=["GET"])
 def get_qc_report_attachments():
-    r = s.get(
-        LIMS_REST_API_ROOT + "/attachment",
-        headers=lims_headers,
-        auth=(LIMS_API_USER, LIMS_API_PW),
-        params={"datatype": "Attachment", "fields": {"recordId": "5972466"}},
-        verify=False,
-    )
+    # r = s.get(
+    #     LIMS_REST_API_ROOT + "/datarecord",
+    #     headers=lims_headers,
+    #     auth=(LIMS_API_USER, LIMS_API_PW),
+    #     params={"datatype": "Attachment", "fields": {"recordId": "5674044"}},
+    #     verify=False,
+    # )
     # print(r)
 
     return r.text
@@ -291,7 +296,7 @@ def build_table(reportTable, samples, columnFeatures, order):
                             )
                         )
                     elif orderedColumn == "InvestigatorDecision":
-                        print(sample)
+                        # print(sample)
                         if columnFeatures[orderedColumn]["data"] in sample:
                             responseSample[
                                 columnFeatures[orderedColumn]["data"]
@@ -312,6 +317,29 @@ def build_table(reportTable, samples, columnFeatures, order):
             "columnFeatures": responseColumns,
             "columnHeaders": responseHeaders,
         }
+
+
+def build_attachment_list(field, attachments):
+
+    responseAttachments = []
+
+    for attachment in attachments:
+        responseAttachment = {}
+        responseAttachment["fileName"] = attachment["fileName"]
+        responseAttachment["recordId"] = attachment["recordId"]
+        responseAttachment["action"] = "Download " + str(attachment["recordId"])
+        responseAttachments.append(responseAttachment)
+
+    return {
+        "data": responseAttachments,
+        "columnFeatures": [
+            {"data": "fileName", "readOnly": "true"},
+            {"data": "action", "readOnly": "true"},
+            # last column will be hidden in FE
+            {"data": "recordId", "readOnly": "true"},
+        ],
+        "columnHeaders": ["File Name", "Action", "RecordId"],
+    }
 
 
 def get_picklist(listname):
