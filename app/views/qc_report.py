@@ -106,7 +106,7 @@ def get_qc_report_samples():
         verify=False,
         data=data,
     )
-
+    # print(data)
     # dnar = s.get(
     #     LIMS_API_ROOT + "/api/getRequestSamples?request=" + request_id,
     #     auth=(LIMS_USER, LIMS_PW),
@@ -165,16 +165,44 @@ def get_qc_report_samples():
 #    )
 
 
+@qc_report.route("/setQCInvestigatorDecision", methods=["POST"])
+def set_qc_investigator_decision():
+    payload = request.get_json()["data"]
+
+    # request_id = payload["request"]
+    # samples = payload["samples"]
+    # puts the params in the dictionary
+    # data['request'] = request_id
+    # print(payload)
+    r = s.post(
+        LIMS_API_ROOT + "/setQcInvestigatorDecision",
+        auth=(LIMS_USER, LIMS_PW),
+        verify=False,
+        data=json.dumps(payload),
+    )
+
+    # r = s.get(
+    #     LIMS_REST_API_ROOT + "/attachment",
+    #     headers=lims_headers,
+    #     auth=(LIMS_API_USER, LIMS_API_PW),
+    #     params={"datatype": "Attachment", "fields": {"CreatedBy": "chend"}},
+    #     verify=False,
+    # )
+    # print(r)
+
+    return "200"
+
+
 @qc_report.route("/getAttachments", methods=["GET"])
 def get_qc_report_attachments():
     r = s.get(
         LIMS_REST_API_ROOT + "/attachment",
         headers=lims_headers,
         auth=(LIMS_API_USER, LIMS_API_PW),
-        params={"datatype": "Attachment", "fields": {"CreatedBy": "chend"}},
+        params={"datatype": "Attachment", "fields": {"recordId": "5972466"}},
         verify=False,
     )
-    print(r)
+    # print(r)
 
     return r.text
 
@@ -191,7 +219,7 @@ def build_table(reportTable, samples, columnFeatures, order):
     responseColumns = []
     responseHeaders = []
     responseSamples = []
-    print(samples)
+    # print(samples)
     if not samples:
         return {}
     else:
@@ -201,7 +229,7 @@ def build_table(reportTable, samples, columnFeatures, order):
                 if orderedColumn in columnFeatures:
 
                     if "picklistName" in columnFeatures[orderedColumn]:
-                        print(responseColumns)
+                        # print(responseColumns)
                         columnFeatures[orderedColumn]["source"] = get_picklist(
                             columnFeatures[orderedColumn]["picklistName"]
                         )
@@ -263,6 +291,7 @@ def build_table(reportTable, samples, columnFeatures, order):
                             )
                         )
                     elif orderedColumn == "InvestigatorDecision":
+                        print(sample)
                         if columnFeatures[orderedColumn]["data"] in sample:
                             responseSample[
                                 columnFeatures[orderedColumn]["data"]
@@ -289,7 +318,7 @@ def get_picklist(listname):
     # if uwsgi.cache_exists(listname):
     #     return pickle.loads(uwsgi.cache_get(listname))
     # else:
-    print("listname" + listname)
+
     r = s.get(
         LIMS_API_ROOT + "/getPickListValues?list=%s" % listname,
         auth=(LIMS_USER, LIMS_PW),
