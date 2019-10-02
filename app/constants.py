@@ -5,7 +5,7 @@ sharedColumns = {
         "columnHeader": "IGO ID",
         "readOnly": "true",
     },
-     "RecordId": {
+    "RecordId": {
         "limsField": "RecordId",
         "data": "recordId",
         "columnHeader": "Record ID",
@@ -152,7 +152,23 @@ libraryColumns = {
     },
 }
 
- # last column is always RecordId. Needed to set investigator decision efficiently
+attachmentColumns = {
+    "FileName": {
+        "limsField": "FilePath",
+        "data": "fileName",
+        "columnHeader": "File Name",
+        "readOnly": "true",
+    },
+    "Action": {"data": "action", "columnHeader": "Action"},
+    "RecordId": {
+        "limsField": "RecordId",
+        "data": "recordId",
+        "columnHeader": "Record ID",
+        "readOnly": "true",
+    },
+}
+
+# last column is always RecordId. Needed to set investigator decision efficiently
 dnaOrder = [
     "Recipe",
     "IgoQcRecommendation",
@@ -168,7 +184,7 @@ dnaOrder = [
     "PercentHuman",
     "TumorOrNormal",
     "Preservation",
-    "RecordId"
+    "RecordId",
 ]
 
 rnaOrder = [
@@ -185,7 +201,7 @@ rnaOrder = [
     "DV200",
     "Preservation",
     "Rqn",
-    "RecordId"
+    "RecordId",
 ]
 
 libraryOrder = [
@@ -200,5 +216,7 @@ libraryOrder = [
     "Volume",
     "TotalMass",
     "TumorOrNormal",
-    "RecordId"
+    "RecordId",
 ]
+
+attachmentOrder = ["FileName", "Action", "RecordId"]

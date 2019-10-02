@@ -17,7 +17,6 @@ def get_comments():
     # print(payload)
     # request_id = payload["request_id"]
     request_id = request.args.get("request_id")
-    print(request_id)
     # check if there are comments for that request
     comments_response = load_comments_for_request(request_id)
     # columnDefs.append(copy.deepcopy(possible_fields[column[0]]))

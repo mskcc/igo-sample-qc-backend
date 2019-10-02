@@ -1,8 +1,19 @@
-from flask import Flask, Blueprint, json, jsonify, request, make_response
+from flask import (
+    Flask,
+    Blueprint,
+    json,
+    jsonify,
+    request,
+    make_response,
+    send_from_directory,
+)
 import requests
 import sys
+import re
 import copy
 from app import app, constants
+import os.path
+import uwsgi, pickle
 
 # MORE IMPORTANT THAN IT SHOULD BE
 app.config['JSON_SORT_KEYS'] = False
@@ -11,18 +22,19 @@ app.config['JSON_SORT_KEYS'] = False
 LIMS_API_ROOT = app.config["LIMS_API_ROOT"]
 LIMS_USER = app.config["LIMS_USER"]
 LIMS_PW = app.config["LIMS_PW"]
+TMP_FOLDER = app.config["TMP_FOLDER"]
 
-LIMS_REST_API_ROOT = app.config["LIMS_REST_API_ROOT"]
-LIMS_API_USER = app.config["LIMS_API_USER"]
-LIMS_API_PW = app.config["LIMS_API_PW"]
-LIMS_GUID = app.config["LIMS_GUID"]
+# LIMS_REST_API_ROOT = app.config["LIMS_REST_API_ROOT"]
+# LIMS_API_USER = app.config["LIMS_API_USER"]
+# LIMS_API_PW = app.config["LIMS_API_PW"]
+# LIMS_GUID = app.config["LIMS_GUID"]
 
 qc_report = Blueprint("qc_report", __name__)
 
 
 # request = package.session
 s = requests.Session()
-lims_headers = {'guid': LIMS_GUID}
+# lims_headers = {'guid': LIMS_GUID}
 # s.mount("https://", MyAdapter())
 
 
@@ -145,8 +157,12 @@ def get_qc_report_samples():
                 tables[field] = build_table(
                     field, lims_data[field], columnFeatures, constants.libraryOrder
                 )
+
             if field == "attachments":
-                tables[field] = build_attachment_list(field, lims_data[field])
+                columnFeatures = constants.attachmentColumns
+                tables[field] = build_table(
+                    field, lims_data[field], columnFeatures, constants.attachmentOrder
+                )
 
         return make_response((jsonify(tables)), 200, None)
     else:
@@ -198,18 +214,27 @@ def set_qc_investigator_decision():
     return "200"
 
 
-@qc_report.route("/getAttachments", methods=["GET"])
-def get_qc_report_attachments():
-    # r = s.get(
-    #     LIMS_REST_API_ROOT + "/datarecord",
-    #     headers=lims_headers,
-    #     auth=(LIMS_API_USER, LIMS_API_PW),
-    #     params={"datatype": "Attachment", "fields": {"recordId": "5674044"}},
-    #     verify=False,
-    # )
-    # print(r)
+@qc_report.route("/getAttachment", methods=["GET"])
+def get_attachment():
 
-    return r.text
+    record_id = request.args.get("recordId")
+    file_name = request.args.get("fileName")
+
+    r = s.get(
+        LIMS_API_ROOT + "/getAttachmentFile",
+        auth=(LIMS_USER, LIMS_PW),
+        params={"recordId": record_id},
+        verify=False,
+    )
+
+    if tmp_file_exists(file_name):
+        log_info("Returning tmp file " + file_name)
+        return send_from_directory(TMP_FOLDER, file_name, as_attachment=True)
+    else:
+        with open(TMP_FOLDER + file_name, 'wb') as f:
+            f.write(r.content)
+        log_info("Returning newly downloaded file " + file_name)
+        return send_from_directory(TMP_FOLDER, file_name, as_attachment=True)
 
 
 # -------------UTIL-------------
@@ -248,13 +273,6 @@ def build_table(reportTable, samples, columnFeatures, order):
                             + ' in '
                             + samples[0]['concentrationUnits']
                         )
-
-                    #     print(columnFeatures[orderedColumn])
-                    #     responseColumns[orderedColumn]["source"] = get_picklist(
-                    #         columnFeatures[orderedColumn]["picklistName"]
-                    #     )
-                    #     print(get_picklist(columnFeatures[orderedColumn]["picklistName"]))
-
                     else:
                         responseHeaders.append(
                             columnFeatures[orderedColumn]["columnHeader"]
@@ -343,18 +361,29 @@ def build_attachment_list(field, attachments):
 
 
 def get_picklist(listname):
-    # if uwsgi.cache_exists(listname):
-    #     return pickle.loads(uwsgi.cache_get(listname))
-    # else:
 
-    r = s.get(
-        LIMS_API_ROOT + "/getPickListValues?list=%s" % listname,
-        auth=(LIMS_USER, LIMS_PW),
-        verify=False,
-    )
-    picklist = []
-    for value in json.loads(r.content.decode('utf-8')):
-        picklist.append(value)
-    # uwsgi.cache_set(listname, pickle.dumps(picklist), 900)
-    # return pickle.loads(uwsgi.cache_get(listname))
-    return picklist
+    if uwsgi.cache_exists(listname):
+
+        return pickle.loads(uwsgi.cache_get(listname))
+    else:
+
+        r = s.get(
+            LIMS_API_ROOT + "/getPickListValues?list=%s" % listname,
+            auth=(LIMS_USER, LIMS_PW),
+            verify=False,
+        )
+        picklist = []
+        for value in json.loads(r.content.decode('utf-8')):
+            picklist.append(value)
+        uwsgi.cache_set(listname, pickle.dumps(picklist), 900)
+        print(uwsgi.cache_get(listname))
+        return pickle.loads(uwsgi.cache_get(listname))
+    # return picklist
+
+
+def tmp_file_exists(file_name):
+    return os.path.exists(TMP_FOLDER + file_name)
+
+
+def log_info(message):
+    print(message)
