@@ -6,6 +6,7 @@ from flask import (
     request,
     make_response,
     send_from_directory,
+    send_file,
 )
 import requests
 import sys
@@ -14,6 +15,12 @@ import copy
 from app import app, constants
 import os.path
 import uwsgi, pickle
+from openpyxl import Workbook
+from tempfile import NamedTemporaryFile
+import pandas as pd
+from io import BytesIO
+
+from openpyxl.writer.excel import save_virtual_workbook
 
 # MORE IMPORTANT THAN IT SHOULD BE
 app.config['JSON_SORT_KEYS'] = False
@@ -45,6 +52,7 @@ def get_request_samples():
     return_text = ""
 
     request_id = request.args.get("request_id")
+    
     # the API endpoint
     r = s.get(
         LIMS_API_ROOT + "/api/getRequestSamples?request=" + request_id,
@@ -58,16 +66,28 @@ def get_request_samples():
 
         responseData = {}
 
+
         if "samples" in lims_data:
-            responseData["requestId"] = lims_data["requestId"]
-            responseData["labHeadName"] = lims_data["labHeadName"]
-            responseData["investigatorName"] = lims_data["investigatorName"]
-            responseData["dataAnalystName"] = lims_data["dataAnalystName"]
-            responseData["projectManagerName"] = lims_data["projectManagerName"]
-            responseData["samples"] = []
+            responseData["request"] = {}
+            responseData["request"]["samples"] = []
+            responseData["recipients"] = {}
+            
+            responseData["request"]["requestId"] = lims_data["requestId"]
+            responseData["request"]["LabHeadName"] = lims_data["labHeadName"]
+            responseData["request"]["investigatorName"] = lims_data["investigatorName"]
+            responseData["request"]["dataAnalystName"] = lims_data["dataAnalystName"]
+            responseData["request"]["projectManagerName"] = lims_data["projectManagerName"]
+            
+
+            responseData["recipients"]["IGOEmail"] = "zzPDL_CMO_IGO@mskcc.org"
+            responseData["recipients"]["LabHeadEmail"] = lims_data["labHeadEmail"]
+            responseData["recipients"]["InvestigatorEmail"] = lims_data["investigatorEmail"]
+            responseData["recipients"]["DataAnalystEmail"] = lims_data["dataAnalystEmail"]
+            responseData["recipients"]["OtherContactEmails"] = lims_data["otherContactEmails"]
+            
             # we only need Investigator Sample Ids
             for sample in lims_data["samples"]:
-                responseData["samples"].append(sample["investigatorSampleId"])
+                responseData["request"]["samples"].append(sample["investigatorSampleId"])
 
             return make_response(responseData, r.status_code, None)
         else:
@@ -188,11 +208,6 @@ def get_qc_report_samples():
 def set_qc_investigator_decision():
     payload = request.get_json()["data"]
 
-    # request_id = payload["request"]
-    # samples = payload["samples"]
-    # puts the params in the dictionary
-    # data['request'] = request_id
-    # print(payload)
     r = s.post(
         LIMS_API_ROOT + "/setQcInvestigatorDecision",
         auth=(LIMS_USER, LIMS_PW),
@@ -200,22 +215,11 @@ def set_qc_investigator_decision():
         data=json.dumps(payload),
     )
 
-    # print(r.text)
-
-    # r = s.get(
-    #     LIMS_REST_API_ROOT + "/attachment",
-    #     headers=lims_headers,
-    #     auth=(LIMS_API_USER, LIMS_API_PW),
-    #     params={"datatype": "Attachment", "fields": {"CreatedBy": "chend"}},
-    #     verify=False,
-    # )
-    # print(r)
-
-    return "200"
+    return r.text
 
 
-@qc_report.route("/getAttachment", methods=["GET"])
-def get_attachment():
+@qc_report.route("/downloadAttachment", methods=["GET"])
+def download_attachment():
 
     record_id = request.args.get("recordId")
     file_name = request.args.get("fileName")
@@ -313,6 +317,12 @@ def build_table(reportTable, samples, columnFeatures, order):
                                 sample[orderedColumn[0].lower() + orderedColumn[1:]],
                             )
                         )
+                    elif orderedColumn == "Action":
+
+                        responseSample[columnFeatures[orderedColumn]["data"]] = (
+                            "<span class ='download-icon'><i class=%s>%s</i></span>"
+                            % ("material-icons", "cloud_download")
+                        )
                     elif orderedColumn == "InvestigatorDecision":
                         # print(sample)
                         if columnFeatures[orderedColumn]["data"] in sample:
@@ -363,7 +373,6 @@ def build_attachment_list(field, attachments):
 def get_picklist(listname):
 
     if uwsgi.cache_exists(listname):
-
         return pickle.loads(uwsgi.cache_get(listname))
     else:
 
@@ -376,7 +385,6 @@ def get_picklist(listname):
         for value in json.loads(r.content.decode('utf-8')):
             picklist.append(value)
         uwsgi.cache_set(listname, pickle.dumps(picklist), 900)
-        print(uwsgi.cache_get(listname))
         return pickle.loads(uwsgi.cache_get(listname))
     # return picklist
 

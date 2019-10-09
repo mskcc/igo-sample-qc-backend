@@ -159,7 +159,12 @@ attachmentColumns = {
         "columnHeader": "File Name",
         "readOnly": "true",
     },
-    "Action": {"data": "action", "columnHeader": "Action"},
+    "Action": {
+        "data": "action",
+        "columnHeader": "Action",
+        "renderer": "html",
+        'readOnly': "true",
+    },
     "RecordId": {
         "limsField": "RecordId",
         "data": "recordId",
