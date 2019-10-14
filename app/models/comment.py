@@ -1,7 +1,8 @@
 import datetime
 from app import db
 
-# Model
+
+# Model, parent of comment_relation
 class Comment(db.Model):
     """
     Create a Comment table
@@ -11,11 +12,10 @@ class Comment(db.Model):
     # __table_args__ = ??
 
     id = db.Column(db.Integer, primary_key=True)
+    commentrelation_id = db.Column(db.Integer, db.ForeignKey('commentrelations.id'))
     username = db.Column(db.String(40), nullable=False)
     user_title = db.Column(db.String(60), nullable=False)
     comment = db.Column(db.Text(), nullable=False)
-    request_id = db.Column(db.String(40), nullable=False)
-    qc_table = db.Column(db.String(40), nullable=False)
     date_created = db.Column(db.DateTime, nullable=False)
     date_updated = db.Column(db.DateTime, nullable=True)
 
@@ -24,8 +24,6 @@ class Comment(db.Model):
         username,
         user_title,
         comment,
-        request_id,
-        qc_table,
         date_updated,
         date_created=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
     ):
@@ -33,8 +31,6 @@ class Comment(db.Model):
         self.username = username
         self.user_title = user_title
         self.comment = comment
-        self.request_id = request_id
-        self.qc_table = qc_table
         self.date_created = date_created
         self.date_updated = date_updated
 
@@ -46,8 +42,7 @@ class Comment(db.Model):
             "username": self.username,
             "user_title": self.user_title,
             "comment": self.comment,
-            "request_id": self.request_id,
-            "qc_table": self.qc_table,
+            # "qc_table": self.qc_table,
             "date_created": self.date_created.strftime("%Y-%m-%d %H:%M:%S"),
             "date_updated": self.date_updated.strftime("%Y-%m-%d %H:%M:%S"),
         }

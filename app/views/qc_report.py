@@ -9,6 +9,8 @@ from flask import (
     send_file,
 )
 import requests
+
+
 import sys
 import re
 import copy
@@ -52,7 +54,7 @@ def get_request_samples():
     return_text = ""
 
     request_id = request.args.get("request_id")
-    
+
     # the API endpoint
     r = s.get(
         LIMS_API_ROOT + "/api/getRequestSamples?request=" + request_id,
@@ -66,28 +68,36 @@ def get_request_samples():
 
         responseData = {}
 
-
         if "samples" in lims_data:
             responseData["request"] = {}
             responseData["request"]["samples"] = []
             responseData["recipients"] = {}
-            
+
             responseData["request"]["requestId"] = lims_data["requestId"]
             responseData["request"]["LabHeadName"] = lims_data["labHeadName"]
             responseData["request"]["investigatorName"] = lims_data["investigatorName"]
             responseData["request"]["dataAnalystName"] = lims_data["dataAnalystName"]
-            responseData["request"]["projectManagerName"] = lims_data["projectManagerName"]
-            
+            responseData["request"]["projectManagerName"] = lims_data[
+                "projectManagerName"
+            ]
 
             responseData["recipients"]["IGOEmail"] = "zzPDL_CMO_IGO@mskcc.org"
             responseData["recipients"]["LabHeadEmail"] = lims_data["labHeadEmail"]
-            responseData["recipients"]["InvestigatorEmail"] = lims_data["investigatorEmail"]
-            responseData["recipients"]["DataAnalystEmail"] = lims_data["dataAnalystEmail"]
-            responseData["recipients"]["OtherContactEmails"] = lims_data["otherContactEmails"]
-            
+            responseData["recipients"]["InvestigatorEmail"] = lims_data[
+                "investigatorEmail"
+            ]
+            responseData["recipients"]["DataAnalystEmail"] = lims_data[
+                "dataAnalystEmail"
+            ]
+            responseData["recipients"]["OtherContactEmails"] = lims_data[
+                "otherContactEmails"
+            ]
+
             # we only need Investigator Sample Ids
             for sample in lims_data["samples"]:
-                responseData["request"]["samples"].append(sample["investigatorSampleId"])
+                responseData["request"]["samples"].append(
+                    sample["investigatorSampleId"]
+                )
 
             return make_response(responseData, r.status_code, None)
         else:

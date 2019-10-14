@@ -1,8 +1,14 @@
 from flask import Flask, Blueprint, json, jsonify, request, make_response
 from app import db
-from app.models import Comment
+from app.models import Comment, CommentRelation
 from sqlalchemy import update
 
+# Import smtplib for the actual sending function
+import smtplib
+from email.mime.text import MIMEText
+
+# Import the email modules we'll need
+from email.message import EmailMessage
 from datetime import datetime
 
 # initializes comment blueprint as an extension of the application
@@ -30,25 +36,69 @@ def get_comments():
 
 
 # accepts a request payload, the new comment, saves it to the DB, and returns comments with the same request_id
-@comment.route("/addInitialComment", methods=['POST'])
+@comment.route("/addAndNotifyInitial", methods=['POST'])
 def save_initial_comment():
-
-    # accepts a request payload and converts it to json
     payload = request.get_json()['data']
-    # print(payload)
 
-    save_comment(payload)
-    # except:
-    # print(
-    #     "Comment already exists for %s and %s." % (report, payload["request_id"])
-    # )
+    try:
+        save_initial_comment(
+            payload["comment"],
+            payload["reports"],
+            payload["recipients"],
+            payload["request_id"],
+        )
+    except:
+        responseObject = {'message': "Failed to save comment"}
+
+        return make_response(jsonify(responseObject), 401, None)
 
     # returns comments for a specific request
     comments_response = load_comments_for_request(payload["request_id"])
-    # columnDefs.append(copy.deepcopy(possible_fields[column[0]]))
 
     responseObject = {'comments': comments_response}
     return make_response(jsonify(responseObject), 200, None)
+
+
+# SENDMAIL = "/usr/sbin/sendmail"  # sendmail location
+
+# @qc_report.route("/notifyInitial", methods=["POST"])
+# def notifyInitial():
+#     # p = os.popen("%s -t" % SENDMAIL, "w")
+#     # p.write("To: wagnerl@mskcc.org\n")
+#     # p.write("From: igoski@mskcc.org\n")
+#     # p.write("Subject: test\n")
+#     # p.write("\n") # blank line separating headers from body
+#     # p.write("Some text\n")
+#     # p.write("some more text\n")
+#     # sts = p.close()
+
+#     # def notify(self, runType, delivered, text, mainContacts, additionalContacts):
+#     #     subjectType = runType
+#     #     if subjectType == "WESAnalysis":
+#     #         subjectType = delivered.requestType
+#     #     msg = MIMEText(text)
+#     #     msg['Subject'] = "Delivery: " + delivered.userName + " sequencing data - " + subjectType + " project " + delivered.requestId
+#     #     msg['From'] = SENDER_ADDRESS
+#     #     msg['To'] = ",".join(mainContacts)
+#     #     msg['Cc'] = ",".join(additionalContacts)
+#     #     s = smtplib.SMTP('localhost')
+#     #     s.sendmail(SENDER_ADDRESS, mainContacts + additionalContacts, msg.as_string())
+#     #     s.close()
+#     # msg = EmailMessage()
+#     # msg.set_content('testtesttest')
+
+#     # me == the sender's email address
+#     # you == the recipient's email address
+#     msg = MIMEText("testtesttest")
+#     msg['Subject'] = 'Sample QC Test'
+#     msg['From'] = "wagnerl@mskcc.org"
+#     msg['To'] = "wagnerl@mskcc.org"
+#     # # msg['Cc'] = "wagnerl@mskcc.org"
+
+#     # # # Send the message via our own SMTP server.
+#     s = smtplib.SMTP('localhost')
+#     s.sendmail("wagnerl@mskcc.org", "wagnerl@mskcc.org", msg.as_string())
+#     s.close()
 
 
 @comment.route("/addComment", methods=['POST'])
@@ -56,13 +106,19 @@ def save_comment():
 
     # accepts a request payload and converts it to json
     payload = request.get_json()['data']
-    # print(payload)
+    # save_initial_comment(payload)
+    # def save_initial_comment(comment, reports, recipients, request_id):
+    try:
+        save_initial_comment(
+            payload["comment"],
+            payload["report"],
+            payload["recipients"],
+            payload["request_id"],
+        )
+    except:
+        responseObject = {'message': "Failed to save comment"}
 
-    save_comment(payload)
-    # except:
-    # print(
-    #     "Comment already exists for %s and %s." % (report, payload["request_id"])
-    # )
+        return make_response(jsonify(responseObject), 401, None)
 
     # returns comments for a specific request
     comments_response = load_comments_for_request(payload["request_id"])
@@ -122,40 +178,85 @@ def load_comments():
 
 # goes to Comment model/table and grabs comments for a specific request_id
 def load_comments_for_request(request_id):
-    comments = Comment.query.filter(Comment.request_id == request_id)
-    comments_response = {"DNA Report": [], "RNA Report": [], "Library Report": []}
-    for comment in comments:
-        # if comment belongs to mutl reports, attach to every one in response
-        if ',' in comment.qc_table:
-            reports = comment.qc_table.split(",")
-            for report in reports:
-                comments_response[report].append(comment.serialize)
-        else:
-            comments_response[comment.qc_table].append(comment.serialize)
+    comment_relations = CommentRelation.query.filter(
+        CommentRelation.request_id == request_id
+    )
+    # comments = Comment.query.filter(Comment.commentrelation_id == comment_relation.id).all()
+    if not (comment_relations):
+        return None
+    else:
+        comments_response = {
+                "DNA Report": [],
+                "RNA Report": [],
+                "Library Report": [],
+                "Pathology Report": [],
+            }
+        
+        for comment_relation in comment_relations:
+            print(comment_relation.reports)
+            comments = comment_relation.children
+            reports = comment_relation.reports
+           
+           
+            for comment in comments:
+                # if comment belongs to mutl reports, attach to every one in response
+                if ',' in comment_relation.reports:
+                    reports = comment_relation.reports.split(",")
+                    print(reports)
+                    for report in reports:
+                        comments_response[report].append(comment.serialize)
+                else:
+                    comments_response[comment_relation.reports].append(comment.serialize)
+
+    # delete reports without comments from response object
     reports_without_comments = {
         k: v for k, v in comments_response.items() if len(v) == 0
     }
+
     for to_delete in reports_without_comments:
         if to_delete in comments_response:
             del comments_response[to_delete]
     return comments_response
 
 
+def save_initial_comment(comment, reports, recipients, request_id):
+    comment_relation = (
+        CommentRelation.query.filter(CommentRelation.request_id == request_id)
+        .filter(CommentRelation.reports == reports)
+        .filter(CommentRelation.recipients == recipients)
+        .first()
+    )
+    if not (comment_relation):
+        comment_relation = CommentRelation(
+            request_id=request_id,
+            reports=reports,
+            recipients=recipients,
+            date_created=datetime.now(),
+            date_updated=datetime.now(),
+        )
+        db.session.add(comment_relation)
+    print(comment)
+    comment = Comment(
+        username=comment["username"],
+        user_title="test",
+        comment=comment["content"],
+        date_created=datetime.now(),
+        date_updated=datetime.now(),
+    )
+    comment_relation.children.append(comment)
+    db.session.commit()
+
+    return
+
+
 def save_comment(payload):
     print(payload)
-    # if ',' in payload["reports"]:
-    #     print(payload["reports"])
-    #     qc_table = ",".join(payload["reports"])
-    #     print(qc_table)
-    # else:
-    qc_table = payload["reports"]
 
     comment = Comment(
         username=payload["username"],
         user_title="test",
         comment=payload["comment"],
         request_id=payload["request_id"],
-        qc_table=qc_table,
         date_created=datetime.now(),
         date_updated=datetime.now(),
     )
