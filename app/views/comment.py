@@ -37,11 +37,11 @@ def get_comments():
 
 # accepts a request payload, the new comment, saves it to the DB, and returns comments with the same request_id
 @comment.route("/addAndNotifyInitial", methods=['POST'])
-def save_initial_comment():
+def addAndNotifyInitial():
     payload = request.get_json()['data']
 
     try:
-        save_initial_comment(
+        save_initial_comment_and_relation(
             payload["comment"],
             payload["reports"],
             payload["recipients"],
@@ -51,6 +51,27 @@ def save_initial_comment():
         responseObject = {'message': "Failed to save comment"}
 
         return make_response(jsonify(responseObject), 401, None)
+
+    # returns comments for a specific request
+    comments_response = load_comments_for_request(payload["request_id"])
+
+    responseObject = {'comments': comments_response}
+    return make_response(jsonify(responseObject), 200, None)
+
+@comment.route("/addAndNotify", methods=['POST'])
+def addAndNotify():
+    payload = request.get_json()['data']
+
+    try:
+        save_comment_and_relation(
+            payload["comment"],
+            payload["reports"],
+            payload["request_id"],
+        )
+    except:
+        responseObject = {'message': "Failed to save comment"}
+
+        return make_response(jsonify(responseObject), 400, None)
 
     # returns comments for a specific request
     comments_response = load_comments_for_request(payload["request_id"])
@@ -186,31 +207,32 @@ def load_comments_for_request(request_id):
         return None
     else:
         comments_response = {
-                "DNA Report": [],
-                "RNA Report": [],
-                "Library Report": [],
-                "Pathology Report": [],
+                "DNA Report": {"comments":[], "recipients":[]},
+                "RNA Report": {"comments":[], "recipients":[]},
+                "Library Report": {"comments":[], "recipients":[]},
+                "Pathology Report": {"comments":[], "recipients":[]},
             }
         
         for comment_relation in comment_relations:
             print(comment_relation.reports)
             comments = comment_relation.children
             reports = comment_relation.reports
-           
+            comments_response[comment_relation.reports]["recipients"].append(comment_relation.recipients)
            
             for comment in comments:
                 # if comment belongs to mutl reports, attach to every one in response
                 if ',' in comment_relation.reports:
                     reports = comment_relation.reports.split(",")
-                    print(reports)
                     for report in reports:
-                        comments_response[report].append(comment.serialize)
+                        comments_response[report]["comments"].append(comment.serialize)
+                       
                 else:
-                    comments_response[comment_relation.reports].append(comment.serialize)
+                    comments_response[comment_relation.reports]["comments"].append(comment.serialize)
+                  
 
     # delete reports without comments from response object
     reports_without_comments = {
-        k: v for k, v in comments_response.items() if len(v) == 0
+        k: v for k, v in comments_response.items() if len(v["comments"]) == 0
     }
 
     for to_delete in reports_without_comments:
@@ -219,11 +241,39 @@ def load_comments_for_request(request_id):
     return comments_response
 
 
-def save_initial_comment(comment, reports, recipients, request_id):
+def save_initial_comment_and_relation(comment, reports, recipients, request_id):
     comment_relation = (
         CommentRelation.query.filter(CommentRelation.request_id == request_id)
         .filter(CommentRelation.reports == reports)
         .filter(CommentRelation.recipients == recipients)
+        .first()
+    )
+    if not (comment_relation):
+        comment_relation = CommentRelation(
+            request_id=request_id,
+            reports=reports,
+            recipients=recipients,
+            date_created=datetime.now(),
+            date_updated=datetime.now(),
+        )
+        db.session.add(comment_relation)
+    print(comment)
+    comment = Comment(
+        username=comment["username"],
+        user_title="test",
+        comment=comment["content"],
+        date_created=datetime.now(),
+        date_updated=datetime.now(),
+    )
+    comment_relation.children.append(comment)
+    db.session.commit()
+
+    return
+
+def save_comment_and_relation(comment, reports, request_id):
+    comment_relation = (
+        CommentRelation.query.filter(CommentRelation.request_id == request_id)
+        .filter(CommentRelation.reports == reports)
         .first()
     )
     if not (comment_relation):
