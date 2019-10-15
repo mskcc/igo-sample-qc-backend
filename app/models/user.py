@@ -9,20 +9,20 @@ import ldap
 # igo_user: can view their projects
 # member: can see all projects
 # super: can promote
-supers = [
-    'bourquec',
-    'vialea',
-    'wagnerl',
-    'zimelc',
+# supers = [
+#     'bourquec',
+#     'vialea',
+#     'wagnerl',
+#     'zimelc',
     
-]
-members = [
-    'cavatorm',
-    'sunl',
-    'wenrichr',
-    'youd',
+# ]
+# members = [
+#     'cavatorm',
+#     'sunl',
+#     'wenrichr',
+#     'youd',
 
-]
+# ]
 
 # ldap config to allow communication between this app and MSK LDAP server
 ldap.set_option(ldap.OPT_X_TLS_REQUIRE_CERT, ldap.OPT_X_TLS_NEVER) 
@@ -40,19 +40,19 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     full_name = db.Column(db.String(40), nullable=True)
     username = db.Column(db.String(40), nullable=False, unique=True)
-    msk_group = db.Column(db.String(40), nullable=True)
+    title = db.Column(db.String(40), nullable=True)
     role = db.Column(db.String(40), nullable=True)
 
     def __init__(
         self, 
         username, 
         full_name=None, 
-        msk_group=None, 
+        title=None, 
         role='user',
     ):
 
         self.username = username
-        self.msk_group = msk_group
+        self.title = title
         self.role = role
         self.full_name = full_name
 
@@ -62,7 +62,7 @@ class User(db.Model):
         return {
             'id': self.id,
             'username': self.username,
-            'msk_group': self.msk_group,
+            'title': self.title,
             'role': self.role,
         }
     
@@ -91,15 +91,15 @@ class User(db.Model):
         return result    
 
 
-def insert_initial_values(*args, **kwargs):
-    for user in supers:
-        db.session.add(User(username=user, role='super'))
-    for user in members:
-        db.session.add(User(username=user, role='member'))
-    db.session.commit()
+# def insert_initial_values(*args, **kwargs):
+#     for user in supers:
+#         db.session.add(User(username=user, role='super'))
+#     for user in members:
+#         db.session.add(User(username=user, role='member'))
+#     db.session.commit()
 
 
-event.listen(User.__table__, 'after_create', insert_initial_values)
+# event.listen(User.__table__, 'after_create', insert_initial_values)
 
 
 

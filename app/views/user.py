@@ -8,7 +8,7 @@ from flask_jwt_extended import (
     create_refresh_token,
     get_jwt_identity,
 )
-from app import db, jwt
+from app import app, db, jwt
 from app.models import User, BlacklistToken
 
 # from sqlalchemy import update
@@ -17,6 +17,9 @@ import re
 
 # Might be necessary:
 import ldap
+
+AUTHORIZED_USER_GROUP = app.config["AUTHORIZED_USER_GROUP"]
+LAB_MEMBER_GROUP = app.config["LAB_MEMBER_GROUP"]
 
 
 # initializes user blueprint as an extension of the application
@@ -55,6 +58,7 @@ def login():
         # tries logging in
         try:
             result = User.try_login(username, password)
+
         # catches invalid credentials from LDAP call in user model
         except ldap.INVALID_CREDENTIALS:
             # log_error(
@@ -65,11 +69,16 @@ def login():
             }
             return make_response(jsonify(responseObject), 401, None)
         # if the user is part of GRP_SKI_Haystack_NetIQ
-        if is_authorized(result):
-            # log_info('authorized user loaded: ' + username)
+        lab_member = is_lab_member(result)
+        authorized_user = is_lab_member(result)
+        if authorized_user or lab_member:
 
-            # Ignore for now, this is to load the user from the table or create a new one
-            user = load_username(username)
+            if lab_member:
+                print('lab member user loaded: ' + username)
+                user = load_username(username, get_user_title(result), "member")
+            else:
+                print('authorized user loaded: ' + username)
+                user = load_username(username, get_user_title(result), "user")
 
             # Create our JWTs
             # default expiration 15 minutes
@@ -83,11 +92,14 @@ def login():
 
             responseObject = {
                 'status': 'success',
-                'message': 'Hello, ' + username + '. You have successfully logged in.',
+                'message': 'Hello, '
+                + user.username
+                + '. You have successfully logged in.',
                 'access_token': access_token,
                 'refresh_token': refresh_token,
                 'username': user.username,
-                # 'userTitle': user.title,
+                'title': user.title,
+                'role': user.role,
             }
             return make_response(jsonify(responseObject), 200, None)
         else:
@@ -165,17 +177,36 @@ def load_users_of_role(role):
     return users_response
 
 
-def load_username(username):
-    return User.query.filter_by(username=username).first()
+def load_username(username, title, role):
+    user = User.query.filter_by(username=username).first()
+    if not user:
+        user = User(username=username, title=title, role=role)
+        db.session.add(user)
+        db.session.commit()
+
+    return user
+
+
+# checks whether user is in GRP_SKI_Haystack_NetIQ
+def is_lab_member(result):
+    return LAB_MEMBER_GROUP in format_result_group(result)
 
 
 # checks whether user is in GRP_SKI_Haystack_NetIQ
 def is_authorized(result):
-    return "GRP_SKI_Haystack_NetIQ" in format_result(result)
+    return AUTHORIZED_USER_GROUP in format_result_group(result)
+
+
+# returns user title
+def get_user_title(result):
+    p = re.search("title(.*?)\]\,", str(result))
+    title = re.sub(r'title\': \[b\'', "", p[0])
+    title = re.sub(r'\']\,', "", title)
+    return title
 
 
 # returns groups the user is a part of
-def format_result(result):
+def format_result_group(result):
     # compiles reg ex pattern into reg ex object
     p = re.compile('CN=(.*?)\,')
     groups = re.sub('CN=Users', '', str(result))
