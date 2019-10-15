@@ -207,17 +207,17 @@ def load_comments_for_request(request_id):
         return None
     else:
         comments_response = {
-                "DNA Report": {"comments":[], "recipients":[]},
-                "RNA Report": {"comments":[], "recipients":[]},
-                "Library Report": {"comments":[], "recipients":[]},
-                "Pathology Report": {"comments":[], "recipients":[]},
+                "DNA Report": {"comments":[], "recipients":""},
+                "RNA Report": {"comments":[], "recipients":""},
+                "Library Report": {"comments":[], "recipients":""},
+                "Pathology Report": {"comments":[], "recipients":""},
             }
         
         for comment_relation in comment_relations:
             print(comment_relation.reports)
             comments = comment_relation.children
             reports = comment_relation.reports
-            comments_response[comment_relation.reports]["recipients"].append(comment_relation.recipients)
+            comments_response[comment_relation.reports]["recipients"] = (comment_relation.recipients)
            
             for comment in comments:
                 # if comment belongs to mutl reports, attach to every one in response
