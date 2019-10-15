@@ -14,6 +14,8 @@ import requests
 import sys
 import re
 import copy
+import traceback
+
 from app import app, constants
 import os.path
 import uwsgi, pickle
@@ -278,6 +280,7 @@ def build_table(reportTable, samples, columnFeatures, order):
                             columnFeatures[orderedColumn]["picklistName"]
                         )
                         responseColumns.append(columnFeatures[orderedColumn])
+
                     else:
                         responseColumns.append(columnFeatures[orderedColumn])
 
@@ -297,7 +300,7 @@ def build_table(reportTable, samples, columnFeatures, order):
                 print(
                     orderedColumn + " not found in expected columns for " + reportTable
                 )
-                print("Unexpected error:%s" % (sys.exc_info()[0]))
+                print(traceback.print_exc())
 
                 try:
                     # delete field from sample if we don't expect it in the FE
@@ -306,6 +309,7 @@ def build_table(reportTable, samples, columnFeatures, order):
                 except:
                     #
                     # if sample.pop failed, excpected column not found in LIMS result, return it to FE anyway.
+                    print(traceback.print_exc())
                     responseColumns[orderedColumn] = {}
                     responseHeaders.append(
                         columnFeatures[orderedColumn]["columnHeader"]
@@ -314,40 +318,51 @@ def build_table(reportTable, samples, columnFeatures, order):
         for sample in samples:
             responseSample = {}
             for orderedColumn in order:
+                orderedSample = sample[orderedColumn[0].lower() + orderedColumn[1:]]
+                dataFieldName = columnFeatures[orderedColumn]["data"]
+
                 try:
 
                     if orderedColumn == "IgoQcRecommendation":
                         recommendation = sample[
                             orderedColumn[0].lower() + orderedColumn[1:]
                         ].lower()
-                        responseSample[columnFeatures[orderedColumn]["data"]] = (
-                            "<div class=%s>%s</div>"
-                            % (
-                                recommendation,
-                                sample[orderedColumn[0].lower() + orderedColumn[1:]],
-                            )
+                        responseSample[dataFieldName] = "<div class=%s>%s</div>" % (
+                            recommendation,
+                            orderedSample,
                         )
+                    elif (
+                        orderedColumn == "Concentration"
+                        or orderedColumn == "TotalMass"
+                        or orderedColumn == "Rin"
+                        or orderedColumn == "Din"
+                        or orderedColumn == "DV200"
+                    ):
+                        if orderedSample:
+                            responseSample[dataFieldName] = round(float(orderedSample), 1)
+                    elif orderedColumn == "Volume" or orderedColumn == "AvgSize":
+                        if orderedSample:
+                            responseSample[dataFieldName] = round(float(orderedSample), 0)
+
                     elif orderedColumn == "Action":
 
-                        responseSample[columnFeatures[orderedColumn]["data"]] = (
+                        responseSample[dataFieldName] = (
                             "<span class ='download-icon'><i class=%s>%s</i></span>"
                             % ("material-icons", "cloud_download")
                         )
                     elif orderedColumn == "InvestigatorDecision":
                         # print(sample)
-                        if columnFeatures[orderedColumn]["data"] in sample:
-                            responseSample[
-                                columnFeatures[orderedColumn]["data"]
-                            ] = sample[orderedColumn[0].lower() + orderedColumn[1:]]
+                        if dataFieldName in sample:
+                            responseSample[dataFieldName] = orderedSample
                         else:
-                            responseSample[columnFeatures[orderedColumn]["data"]] = None
+                            responseSample[dataFieldName] = None
                     else:
-                        responseSample[columnFeatures[orderedColumn]["data"]] = sample[
-                            orderedColumn[0].lower() + orderedColumn[1:]
-                        ]
+                        responseSample[dataFieldName] = orderedSample
                 except:
+                    print(traceback.print_exc())
+                    print(sample)
                     # Excpected column not found in LIMS result, return it to FE anyway.
-                    responseSample[columnFeatures[orderedColumn]["data"]] = ""
+                    responseSample[dataFieldName] = ""
             responseSamples.append(responseSample)
 
         return {

@@ -2,6 +2,9 @@ from flask import Flask, Blueprint, json, jsonify, request, make_response
 from app import db
 from app.models import Comment, CommentRelation
 from sqlalchemy import update
+import traceback
+
+
 
 # Import smtplib for the actual sending function
 import smtplib
@@ -48,9 +51,11 @@ def addAndNotifyInitial():
             payload["request_id"],
         )
     except:
+        traceback.print_exc()
+
         responseObject = {'message': "Failed to save comment"}
 
-        return make_response(jsonify(responseObject), 401, None)
+        return make_response(jsonify(responseObject), 400, None)
 
     # returns comments for a specific request
     comments_response = load_comments_for_request(payload["request_id"])
