@@ -280,20 +280,19 @@ def save_comment(comment, report, request_id, user):
 
 
 def send_initial_notification(recipients, request_id, report, user):
-    template = constants.initial_email_template
+    template = constants.initial_email_template_html
     print(template["subject"] % request_id)
     print(template["body"] % (report.split(' ')[0], request_id))
-    name = user.full_name.split(", ")[1] + " " + user.full_name.split(", ")[0]
+    name = user.full_name
     print(template["footer"] % (name, user.title))
     # me == the sender's email address
     # you == the recipient's email address
-    msg = MIMEText("testtesttest")
+    content = template["body"] % (report.split(' ')[0], request_id) + template[
+        "footer"
+    ] % (name, user.title)
+    msg = MIMEText(content,"html")
     msg['Subject'] = template["subject"] % request_id
-    content = (
-        template["body"] % (report.split(' ')[0], request_id)
-        + template["body"] % (report.split(' ')[0], request_id)
-        + template["footer"] % (name, user.title)
-    )
+
     msg['From'] = "wagnerl@mskcc.org"
     msg['To'] = "wagnerl@mskcc.org"
     # # msg['Cc'] = "wagnerl@mskcc.org"
@@ -309,7 +308,7 @@ def send_initial_notification(recipients, request_id, report, user):
 def send_notification(recipients, comment, request_id, report, user):
     template = constants.notification_email_template_html
 
-    name = user.full_name.split(", ")[1] + " " + user.full_name.split(", ")[0]
+    name = user.full_name
 
     content = template["body"] % (
         report.split(' ')[0],

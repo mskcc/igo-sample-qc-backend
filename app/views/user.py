@@ -211,7 +211,8 @@ def get_user_fullname(result):
     p = re.search("displayName(.*?)\]\,", str(result))
     full_name = re.sub(r'displayName\': \[b\'', "", p[0])
     full_name = re.sub(r'\/.*', "", full_name)
-    return full_name
+    name = full_name.split(", ")[1] + " " + full_name.split(", ")[0]
+    return name
 
 
 # returns groups the user is a part of
