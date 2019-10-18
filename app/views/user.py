@@ -72,13 +72,15 @@ def login():
         lab_member = is_lab_member(result)
         authorized_user = is_lab_member(result)
         if authorized_user or lab_member:
-
+            full_name = get_user_fullname(result)
+            title = get_user_title(result)
+            
             if lab_member:
                 print('lab member user loaded: ' + username)
-                user = load_username(username, get_user_title(result), "member")
+                user = load_username(username, title, full_name, "member")
             else:
                 print('authorized user loaded: ' + username)
-                user = load_username(username, get_user_title(result), "user")
+                user = load_username(username, title, full_name, "user")
 
             # Create our JWTs
             # default expiration 15 minutes
@@ -99,6 +101,7 @@ def login():
                 'refresh_token': refresh_token,
                 'username': user.username,
                 'title': user.title,
+                'full_name': user.full_name,
                 'role': user.role,
             }
             return make_response(jsonify(responseObject), 200, None)
@@ -177,10 +180,10 @@ def load_users_of_role(role):
     return users_response
 
 
-def load_username(username, title, role):
+def load_username(username, title, full_name, role):
     user = User.query.filter_by(username=username).first()
     if not user:
-        user = User(username=username, title=title, role=role)
+        user = User(username=username, title=title, full_name=full_name, role=role)
         db.session.add(user)
         db.session.commit()
 
@@ -203,6 +206,12 @@ def get_user_title(result):
     title = re.sub(r'title\': \[b\'', "", p[0])
     title = re.sub(r'\']\,', "", title)
     return title
+
+def get_user_fullname(result):
+    p = re.search("displayName(.*?)\]\,", str(result))
+    full_name = re.sub(r'displayName\': \[b\'', "", p[0])
+    full_name = re.sub(r'\/.*', "", full_name)
+    return full_name
 
 
 # returns groups the user is a part of

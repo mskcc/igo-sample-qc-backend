@@ -1,7 +1,9 @@
-
 import datetime
 from app import db
-from flask_sqlalchemy import event
+# from flask_sqlalchemy import event
+from sqlalchemy.orm import relationship
+from sqlalchemy.ext.declarative import declarative_base
+
 import ldap
 
 
@@ -14,7 +16,7 @@ import ldap
 #     'vialea',
 #     'wagnerl',
 #     'zimelc',
-    
+
 # ]
 # members = [
 #     'cavatorm',
@@ -25,7 +27,8 @@ import ldap
 # ]
 
 # ldap config to allow communication between this app and MSK LDAP server
-ldap.set_option(ldap.OPT_X_TLS_REQUIRE_CERT, ldap.OPT_X_TLS_NEVER) 
+ldap.set_option(ldap.OPT_X_TLS_REQUIRE_CERT, ldap.OPT_X_TLS_NEVER)
+
 
 def get_ldap_connection():
     conn = ldap.initialize('ldaps://ldapha.mskcc.root.mskcc.org/')
@@ -42,14 +45,9 @@ class User(db.Model):
     username = db.Column(db.String(40), nullable=False, unique=True)
     title = db.Column(db.String(40), nullable=True)
     role = db.Column(db.String(40), nullable=True)
+    children = relationship("Comment")
 
-    def __init__(
-        self, 
-        username, 
-        full_name=None, 
-        title=None, 
-        role='user',
-    ):
+    def __init__(self, username, full_name=None, title=None, role='user'):
 
         self.username = username
         self.title = title
@@ -65,9 +63,9 @@ class User(db.Model):
             'title': self.title,
             'role': self.role,
         }
-    
+
     # if you call this from the view (like, User.login(username, password) it will pass the credentials
-    # on to LDAP and return either the result containing all the user's groups or a LDAP exception 
+    # on to LDAP and return either the result containing all the user's groups or a LDAP exception
     # that will be caught in the view
 
     @staticmethod
@@ -81,14 +79,14 @@ class User(db.Model):
         result = conn.search_s(
             'DC=MSKCC,DC=ROOT,DC=MSKCC,DC=ORG',
             ldap.SCOPE_SUBTREE,
-            'sAMAccountName='+ username,
+            'sAMAccountName=' + username,
             attrs,
         )
         # if you want to see what comes back in the terminal
         # print(result)
 
         conn.unbind_s()
-        return result    
+        return result
 
 
 # def insert_initial_values(*args, **kwargs):
@@ -100,7 +98,3 @@ class User(db.Model):
 
 
 # event.listen(User.__table__, 'after_create', insert_initial_values)
-
-
-
-

@@ -318,46 +318,57 @@ def build_table(reportTable, samples, columnFeatures, order):
         for sample in samples:
             responseSample = {}
             for orderedColumn in order:
-                orderedSample = sample[orderedColumn[0].lower() + orderedColumn[1:]]
-                dataFieldName = columnFeatures[orderedColumn]["data"]
 
+                formatted_ordered_col = orderedColumn[0].lower() + orderedColumn[1:]
                 try:
+                    dataFieldName = columnFeatures[orderedColumn]["data"]
+                    if formatted_ordered_col in sample:
+                        orderedSample = sample[formatted_ordered_col]
 
-                    if orderedColumn == "IgoQcRecommendation":
-                        recommendation = sample[
-                            orderedColumn[0].lower() + orderedColumn[1:]
-                        ].lower()
-                        responseSample[dataFieldName] = "<div class=%s>%s</div>" % (
-                            recommendation,
-                            orderedSample,
-                        )
-                    elif (
-                        orderedColumn == "Concentration"
-                        or orderedColumn == "TotalMass"
-                        or orderedColumn == "Rin"
-                        or orderedColumn == "Din"
-                        or orderedColumn == "DV200"
-                    ):
-                        if orderedSample:
-                            responseSample[dataFieldName] = round(float(orderedSample), 1)
-                    elif orderedColumn == "Volume" or orderedColumn == "AvgSize":
-                        if orderedSample:
-                            responseSample[dataFieldName] = round(float(orderedSample), 0)
+                        if orderedColumn == "IgoQcRecommendation":
 
-                    elif orderedColumn == "Action":
+                            recommendation = sample[
+                                orderedColumn[0].lower() + orderedColumn[1:]
+                            ].lower()
+                            responseSample[dataFieldName] = "<div class=%s>%s</div>" % (
+                                recommendation,
+                                orderedSample,
+                            )
+                        elif (
+                            orderedColumn == "Concentration"
+                            or orderedColumn == "TotalMass"
+                            or orderedColumn == "Rin"
+                            or orderedColumn == "Din"
+                            or orderedColumn == "DV200"
+                        ):
+                            if orderedSample:
+                                responseSample[dataFieldName] = round(
+                                    float(orderedSample), 1
+                                )
+                        elif orderedColumn == "Volume" or orderedColumn == "AvgSize":
+                            if orderedSample:
+                                responseSample[dataFieldName] = round(
+                                    float(orderedSample), 0
+                                )
 
-                        responseSample[dataFieldName] = (
-                            "<span class ='download-icon'><i class=%s>%s</i></span>"
-                            % ("material-icons", "cloud_download")
-                        )
-                    elif orderedColumn == "InvestigatorDecision":
-                        # print(sample)
-                        if dataFieldName in sample:
-                            responseSample[dataFieldName] = orderedSample
+                        elif orderedColumn == "Action":
+
+                            responseSample[dataFieldName] = (
+                                "<span class ='download-icon'><i class=%s>%s</i></span>"
+                                % ("material-icons", "cloud_download")
+                            )
+                        elif orderedColumn == "InvestigatorDecision":
+                            # print(sample)
+                            if dataFieldName in sample:
+                                responseSample[dataFieldName] = orderedSample
+                            else:
+                                responseSample[dataFieldName] = None
                         else:
-                            responseSample[dataFieldName] = None
+
+                            responseSample[dataFieldName] = orderedSample
+
                     else:
-                        responseSample[dataFieldName] = orderedSample
+                        responseSample[dataFieldName] = ""
                 except:
                     print(traceback.print_exc())
                     print(sample)

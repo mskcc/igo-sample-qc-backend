@@ -225,3 +225,11 @@ libraryOrder = [
 ]
 
 attachmentOrder = ["FileName", "Action", "RecordId"]
+
+
+initial_email_template = {
+    "from": "igoski@mskcc.org",
+    "subject": "%s QC results pending further action",
+    "body": "Hello,\nIGO has completed %s QC on project %s. \nPlease proceed to igo.mskcc.og/sample-qc and search the Request Id to ask any questions, download related documents, and to indicate which sample(s) should continue with processing.\n\nThank you,",
+    "footer": "\n%s\n%s\nIntegrated Genomics Operation\nMemorial Sloan Kettering Cancer Center\nT 646.888.3765\nFollow us on Instagram and Twitter!\n",
+}
