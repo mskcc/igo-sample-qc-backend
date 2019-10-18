@@ -51,6 +51,7 @@ class User(db.Model):
 
         self.username = username
         self.title = title
+        self.full_name = full_name
         self.role = role
         self.full_name = full_name
 
@@ -61,6 +62,7 @@ class User(db.Model):
             'id': self.id,
             'username': self.username,
             'title': self.title,
+            'full_name': self.full_name,
             'role': self.role,
         }
 

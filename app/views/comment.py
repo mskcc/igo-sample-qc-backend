@@ -1,5 +1,5 @@
 from flask import Flask, Blueprint, json, jsonify, request, make_response
-from app import db, constants
+from app import app, db, constants
 from app.models import Comment, CommentRelation, User
 from sqlalchemy import update, text
 
@@ -14,6 +14,8 @@ from email.mime.text import MIMEText
 from email.message import EmailMessage
 from datetime import datetime
 
+NOTIFICATION_SENDER = app.config["NOTIFICATION_SENDER"]
+ENV = app.config["ENV"]
 # initializes comment blueprint as an extension of the application
 comment = Blueprint('comment', __name__)
 
@@ -279,33 +281,39 @@ def save_comment(comment, report, request_id, user):
     return
 
 
-def send_initial_notification(recipients, request_id, report, user):
+def send_initial_notification(recipients, request_id, report, user, template):
+    receiver_email = "wagnerl@mskcc.org"
+    # receiver_email = recipients
+    sender_email = NOTIFICATION_SENDER
+    # print(receiver_email.split(","))
+
     template = constants.initial_email_template_html
-    print(template["subject"] % request_id)
-    print(template["body"] % (report.split(' ')[0], request_id))
     name = user.full_name
-    print(template["footer"] % (name, user.title))
-    # me == the sender's email address
-    # you == the recipient's email address
     content = template["body"] % (report.split(' ')[0], request_id) + template[
         "footer"
     ] % (name, user.title)
-    msg = MIMEText(content,"html")
+    msg = MIMEText(content, "html")
     msg['Subject'] = template["subject"] % request_id
 
-    msg['From'] = "wagnerl@mskcc.org"
-    msg['To'] = "wagnerl@mskcc.org"
-    # # msg['Cc'] = "wagnerl@mskcc.org"
+    msg['From'] = sender_email
+    msg['To'] = receiver_email
 
-    # # # Send the message via our own SMTP server.
+    # Send the message via our own SMTP server.
     s = smtplib.SMTP('localhost')
-    s.sendmail("wagnerl@mskcc.org", "wagnerl@mskcc.org", msg.as_string())
+    # .sendmail(sender_email, receiver_email, message.as_string())
+    # if ENV = development
+    # s.sendmail(sender_email, receiver_email, msg.as_string())
     s.close()
-
+    print(msg.as_string())
     return "done"
 
 
 def send_notification(recipients, comment, request_id, report, user):
+    receiver_email = "wagnerl@mskcc.org"
+    # receiver_email = recipients
+    sender_email = NOTIFICATION_SENDER
+    # print(receiver_email.split(","))
+
     template = constants.notification_email_template_html
 
     name = user.full_name
@@ -318,13 +326,15 @@ def send_notification(recipients, comment, request_id, report, user):
     msg = MIMEText(content, "html")
     msg['Subject'] = template["subject"] % request_id
 
-    msg['From'] = "wagnerl@mskcc.org"
-    msg['To'] = "wagnerl@mskcc.org"
-    # # msg['Cc'] = "wagnerl@mskcc.org"
+    msg['From'] = sender_email
+    msg['To'] = receiver_email
+    # # msg['Cc'] = "patrunoa@mskcc.org"
 
     # # # Send the message via our own SMTP server.
     s = smtplib.SMTP('localhost')
-    s.sendmail("wagnerl@mskcc.org", "wagnerl@mskcc.org", msg.as_string())
+    # .sendmail(sender_email, receiver_email, message.as_string())
+    # if ENV = development
+    # s.sendmail(sender_email, receiver_email.split(","), msg.as_string())
     s.close()
-
+    print(msg.as_string())
     return "done"
