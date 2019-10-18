@@ -36,15 +36,15 @@ def addAndNotifyInitial():
         recipients = ""
         user = User.query.filter_by(username=payload["comment"]["username"]).first()
         for report in payload["reports"]:
-            result = save_initial_comment_and_relation(
+            recipients = save_initial_comment_and_relation(
                 payload["comment"],
                 report,
                 payload["recipients"],
                 payload["request_id"],
                 user,
             )
-            if result:
-                recipients = recipients + "," + result
+            if recipients:
+
                 send_initial_notification(
                     recipients, payload["request_id"], report, user
                 )
@@ -69,16 +69,21 @@ def addAndNotifyInitial():
 @comment.route("/addAndNotify", methods=['POST'])
 def add_and_notify():
     payload = request.get_json()['data']
-    print(payload)
     try:
-        recipients = []
+
         user = User.query.filter_by(username=payload["comment"]["username"]).first()
 
-        result = save_comment(
+        recipients = save_comment(
             payload["comment"], payload["report"], payload["request_id"], user
         )
-        if result:
-            recipients += result
+        if recipients:
+            send_notification(
+                recipients,
+                payload["comment"],
+                payload["request_id"],
+                payload["report"],
+                user,
+            )
     except:
         print(traceback.print_exc())
         responseObject = {'message': "Failed to save comment"}
@@ -101,11 +106,13 @@ def add_to_all_and_notify():
         user = User.query.filter_by(username=payload["comment"]["username"]).first()
 
         for report in payload["reports"]:
-            result = save_comment(
+            recipients = save_comment(
                 payload["comment"], report, payload["request_id"], user
             )
-            if result:
-                recipients += result
+            if recipients:
+                send_notification(
+                    recipients, payload["comment"], payload["request_id"], report, user
+                )
     except:
         print(traceback.print_exc())
         responseObject = {'message': "Failed to save comment"}
@@ -206,7 +213,6 @@ def load_comments_for_request(request_id):
     for to_delete in reports_without_comments:
         if to_delete in comments_response:
             del comments_response[to_delete]
-    print(comments_response)
     return comments_response
 
 
@@ -279,5 +285,47 @@ def send_initial_notification(recipients, request_id, report, user):
     print(template["body"] % (report.split(' ')[0], request_id))
     name = user.full_name.split(", ")[1] + " " + user.full_name.split(", ")[0]
     print(template["footer"] % (name, user.title))
+    # me == the sender's email address
+    # you == the recipient's email address
+    msg = MIMEText("testtesttest")
+    msg['Subject'] = template["subject"] % request_id
+    content = (
+        template["body"] % (report.split(' ')[0], request_id)
+        + template["body"] % (report.split(' ')[0], request_id)
+        + template["footer"] % (name, user.title)
+    )
+    msg['From'] = "wagnerl@mskcc.org"
+    msg['To'] = "wagnerl@mskcc.org"
+    # # msg['Cc'] = "wagnerl@mskcc.org"
+
+    # # # Send the message via our own SMTP server.
+    s = smtplib.SMTP('localhost')
+    s.sendmail("wagnerl@mskcc.org", "wagnerl@mskcc.org", msg.as_string())
+    s.close()
+
+    return "done"
+
+
+def send_notification(recipients, comment, request_id, report, user):
+    template = constants.notification_email_template_html
+
+    name = user.full_name.split(", ")[1] + " " + user.full_name.split(", ")[0]
+
+    content = template["body"] % (
+        report.split(' ')[0],
+        request_id,
+        comment["content"],
+    ) + template["footer"] % (name, user.title)
+    msg = MIMEText(content, "html")
+    msg['Subject'] = template["subject"] % request_id
+
+    msg['From'] = "wagnerl@mskcc.org"
+    msg['To'] = "wagnerl@mskcc.org"
+    # # msg['Cc'] = "wagnerl@mskcc.org"
+
+    # # # Send the message via our own SMTP server.
+    s = smtplib.SMTP('localhost')
+    s.sendmail("wagnerl@mskcc.org", "wagnerl@mskcc.org", msg.as_string())
+    s.close()
 
     return "done"
