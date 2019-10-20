@@ -52,8 +52,8 @@ def get_request_samples():
     role = request.args.get("role")
     # users see requests if they are a lab member
     # if they are associated with request AND if request already has a comment
-    user_authorized_for_request = role == "lab_member" or is_user_authorized_for_request(
-        request_id, username
+    user_authorized_for_request = (
+        role == "lab_member" or is_user_authorized_for_request(request_id, username)
     )
     # return is_dec_maker
     if user_authorized_for_request == False:

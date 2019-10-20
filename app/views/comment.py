@@ -75,29 +75,29 @@ def add_and_notify():
     try:
 
         user = User.query.filter_by(username=payload["comment"]["username"]).first()
-      
+
         recipients = save_comment(
             payload["comment"], payload["report"], payload["request_id"], user
         )
         # if saving worked
         if recipients:
-          if user.role == "lab_member":
-            send_notification(
-                IGO_EMAIL,
-                payload["comment"],
-                payload["request_id"],
-                payload["report"],
-                user,
-            )
-        else:
-            recipients = IGO_EMAIL
-            send_notification(
-                recipients,
-                payload["comment"],
-                payload["request_id"],
-                payload["report"],
-                user,
-            ) 
+            if user.role == "lab_member":
+                send_notification(
+                    IGO_EMAIL,
+                    payload["comment"],
+                    payload["request_id"],
+                    payload["report"],
+                    user,
+                )
+            else:
+                recipients = IGO_EMAIL
+                send_notification(
+                    recipients,
+                    payload["comment"],
+                    payload["request_id"],
+                    payload["report"],
+                    user,
+                )
 
     except:
         print(traceback.print_exc())
