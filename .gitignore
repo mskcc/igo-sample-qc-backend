@@ -126,3 +126,8 @@ dmypy.json
 .pyre/
 
 secret_config.py
+*.ini
+*.pdf
+*.xlsx
+
+
