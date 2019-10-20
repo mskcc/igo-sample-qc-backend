@@ -77,7 +77,7 @@ def login():
             
             if lab_member:
                 print('lab member user loaded: ' + username)
-                user = load_username(username, title, full_name, "member")
+                user = load_username(username, title, full_name, "lab_member")
             else:
                 print('authorized user loaded: ' + username)
                 user = load_username(username, title, full_name, "user")

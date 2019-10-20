@@ -281,7 +281,7 @@ def save_comment(comment, report, request_id, user):
     return
 
 
-def send_initial_notification(recipients, request_id, report, user, template):
+def send_initial_notification(recipients, request_id, report, user):
     receiver_email = "wagnerl@mskcc.org"
     # receiver_email = recipients
     sender_email = NOTIFICATION_SENDER
@@ -302,7 +302,7 @@ def send_initial_notification(recipients, request_id, report, user, template):
     s = smtplib.SMTP('localhost')
     # .sendmail(sender_email, receiver_email, message.as_string())
     # if ENV = development
-    # s.sendmail(sender_email, receiver_email, msg.as_string())
+    s.sendmail(sender_email, receiver_email, msg.as_string())
     s.close()
     print(msg.as_string())
     return "done"
@@ -334,7 +334,7 @@ def send_notification(recipients, comment, request_id, report, user):
     s = smtplib.SMTP('localhost')
     # .sendmail(sender_email, receiver_email, message.as_string())
     # if ENV = development
-    # s.sendmail(sender_email, receiver_email.split(","), msg.as_string())
+    s.sendmail(sender_email, receiver_email.split(","), msg.as_string())
     s.close()
     print(msg.as_string())
     return "done"
