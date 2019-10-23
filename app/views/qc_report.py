@@ -84,21 +84,21 @@ def get_request_samples():
                 responseData["request"]["investigatorName"] = lims_data[
                     "investigatorName"
                 ]
-                responseData["request"]["dataAnalystName"] = lims_data[
-                    "dataAnalystName"
-                ]
-                responseData["request"]["projectManagerName"] = lims_data[
-                    "projectManagerName"
-                ]
+                # responseData["request"]["dataAnalystName"] = lims_data[
+                #     "dataAnalystName"
+                # ]
+                # responseData["request"]["projectManagerName"] = lims_data[
+                #     "projectManagerName"
+                # ]
 
                 responseData["recipients"]["IGOEmail"] = "zzPDL_CMO_IGO@mskcc.org"
                 responseData["recipients"]["LabHeadEmail"] = lims_data["labHeadEmail"]
                 responseData["recipients"]["InvestigatorEmail"] = lims_data[
                     "investigatorEmail"
                 ]
-                responseData["recipients"]["DataAnalystEmail"] = lims_data[
-                    "dataAnalystEmail"
-                ]
+                # responseData["recipients"]["DataAnalystEmail"] = lims_data[
+                #     "dataAnalystEmail"
+                # ]
                 responseData["recipients"]["OtherContactEmails"] = lims_data[
                     "otherContactEmails"
                 ]
