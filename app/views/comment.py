@@ -32,8 +32,9 @@ def get_comments():
 
 # accepts a request payload, the new comment, saves it to the DB, and returns comments with the same request_id
 @comment.route("/addAndNotifyInitial", methods=['POST'])
-def addAndNotifyInitial():
+def add_and_notify_initial():
     payload = request.get_json()['data']
+    print(payload)
 
     try:
         recipients = ""
@@ -239,6 +240,7 @@ def save_initial_comment_and_relation(comment, report, recipients, request_id, u
         .filter(CommentRelation.recipients == recipients)
         .first()
     )
+
     if not (comment_relation):
         comment_relation = CommentRelation(
             request_id=request_id,
@@ -247,6 +249,7 @@ def save_initial_comment_and_relation(comment, report, recipients, request_id, u
             date_created=datetime.now(),
             date_updated=datetime.now(),
         )
+        print(comment_relation.serialize)
         db.session.add(comment_relation)
     print(comment)
 

@@ -215,6 +215,36 @@ def set_qc_investigator_decision():
         return make_response(jsonify(responseObject), 400, None)
 
 
+@qc_report.route("/getPending", methods=["GET"])
+def get_pending():
+    # get request ids from commentrelation where not in request id from decisions
+    try:
+        query = db.session.query(CommentRelation)
+        subquery = db.session.query(Decision.request_id)
+        pendings = query.filter(~CommentRelation.request_id.in_(subquery))
+        return build_pending_list(pendings)
+
+    except:
+        print(traceback.print_exc())
+
+        return None
+
+    # if save_decision(payload["decisions"], payload["request_id"], payload["username"]):
+    #     r = s.post(
+    #         LIMS_API_ROOT + "/setQcInvestigatorDecision",
+    #         auth=(LIMS_USER, LIMS_PW),
+    #         verify=False,
+    #         data=json.dumps(payload["decisions"]),
+    #     )
+
+    #     return r.text
+    # else:
+    #     responseObject = {'message': "Failed to submit."}
+
+    #     return make_response(jsonify(responseObject), 400, None)
+    # return None
+
+
 @qc_report.route("/downloadAttachment", methods=["GET"])
 def download_attachment():
 
@@ -373,6 +403,39 @@ def build_table(reportTable, samples, columnFeatures, order):
             "columnFeatures": responseColumns,
             "columnHeaders": responseHeaders,
         }
+
+
+def build_pending_list(pendings):
+
+    responsePendings = []
+
+    for pending in pendings:
+        responsePending = {}
+        responsePending["request_id"] = pending.request_id
+        responsePending["date"] = pending.date_created
+        responsePending["report"] = pending.report
+
+        responsePending["recipients"] = pending.recipients.replace(',', ',\n')
+        responsePending["show"] = (
+            "<span class ='show-icon'><i class=%s>%s</i></span>"
+            % ("material-icons", "forward")
+        )
+
+        responsePendings.append(responsePending)
+
+    return {
+        "data": responsePendings,
+        "columnFeatures": [
+            {"data": "request_id", "readOnly": "true"},
+            {"data": "date", "readOnly": "true"},
+            {"data": "report", "readOnly": "true"},
+            {"data": "recipients", "readOnly": "true"},
+            {"data": "show", "readOnly": "true", "renderer": "html"},
+            # last column will be hidden in FE
+            # {"data": "recordId", "readOnly": "true"},
+        ],
+        "columnHeaders": constants.pending_order,
+    }
 
 
 def build_attachment_list(field, attachments):

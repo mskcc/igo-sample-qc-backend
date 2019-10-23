@@ -227,6 +227,8 @@ libraryOrder = [
 attachmentOrder = ["FileName", "Action", "RecordId"]
 
 
+pending_order = ["Request", "First notification sent on", "Report", "Recipients", "Show"]
+
 initial_email_template = {
     "from": "igoski@mskcc.org",
     "subject": "%s QC results pending further action",
