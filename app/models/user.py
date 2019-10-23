@@ -45,7 +45,8 @@ class User(db.Model):
     username = db.Column(db.String(40), nullable=False, unique=True)
     title = db.Column(db.String(40), nullable=True)
     role = db.Column(db.String(40), nullable=True)
-    children = relationship("Comment")
+    comments = relationship("Comment")
+    decisions = relationship("Decision")
 
     def __init__(self, username, full_name=None, title=None, role='user'):
 

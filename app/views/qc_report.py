@@ -9,7 +9,7 @@ from flask import (
     send_file,
 )
 import requests
-
+from datetime import datetime
 import os.path
 import uwsgi, pickle
 from openpyxl import Workbook
@@ -24,8 +24,8 @@ import re
 import copy
 import traceback
 
-from app import app, constants
-from app.models import Comment, CommentRelation, User
+from app import app, constants, db
+from app.models import Comment, CommentRelation, Decision, User
 
 # MORE IMPORTANT THAN IT SHOULD BE
 app.config['JSON_SORT_KEYS'] = False
@@ -84,21 +84,11 @@ def get_request_samples():
                 responseData["request"]["investigatorName"] = lims_data[
                     "investigatorName"
                 ]
-                # responseData["request"]["dataAnalystName"] = lims_data[
-                #     "dataAnalystName"
-                # ]
-                # responseData["request"]["projectManagerName"] = lims_data[
-                #     "projectManagerName"
-                # ]
-
                 responseData["recipients"]["IGOEmail"] = "zzPDL_CMO_IGO@mskcc.org"
                 responseData["recipients"]["LabHeadEmail"] = lims_data["labHeadEmail"]
                 responseData["recipients"]["InvestigatorEmail"] = lims_data[
                     "investigatorEmail"
                 ]
-                # responseData["recipients"]["DataAnalystEmail"] = lims_data[
-                #     "dataAnalystEmail"
-                # ]
                 responseData["recipients"]["OtherContactEmails"] = lims_data[
                     "otherContactEmails"
                 ]
@@ -208,16 +198,21 @@ def get_qc_report_samples():
 
 @qc_report.route("/setQCInvestigatorDecision", methods=["POST"])
 def set_qc_investigator_decision():
-    payload = request.get_json()["data"]
+    payload = request.get_json()
+    print(payload)
+    if save_decision(payload["decisions"], payload["request_id"], payload["username"]):
+        r = s.post(
+            LIMS_API_ROOT + "/setQcInvestigatorDecision",
+            auth=(LIMS_USER, LIMS_PW),
+            verify=False,
+            data=json.dumps(payload["decisions"]),
+        )
 
-    r = s.post(
-        LIMS_API_ROOT + "/setQcInvestigatorDecision",
-        auth=(LIMS_USER, LIMS_PW),
-        verify=False,
-        data=json.dumps(payload),
-    )
+        return r.text
+    else:
+        responseObject = {'message': "Failed to submit."}
 
-    return r.text
+        return make_response(jsonify(responseObject), 400, None)
 
 
 @qc_report.route("/downloadAttachment", methods=["GET"])
@@ -438,3 +433,26 @@ def is_user_authorized_for_request(request_id, username):
         if username in relation.recipients:
             return True
     return False
+
+
+def save_decision(decisions, request_id, username):
+    try:
+        user = User.query.filter_by(username=username).first()
+
+        decision_to_save = Decision(
+            decisions=json.dumps(decisions),
+            request_id=request_id,
+            date_created=datetime.now(),
+            date_updated=datetime.now(),
+        )
+
+        user.decisions.append(decision_to_save)
+
+        db.session.commit()
+        return True
+    except:
+        print(traceback.print_exc())
+
+        return None
+
+    return True

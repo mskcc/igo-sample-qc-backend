@@ -256,7 +256,7 @@ def save_initial_comment_and_relation(comment, report, recipients, request_id, u
         date_updated=datetime.now(),
     )
     try:
-        user.children.append(comment)
+        user.comments.append(comment)
         comment_relation.children.append(comment)
         db.session.commit()
     except:
@@ -268,8 +268,6 @@ def save_initial_comment_and_relation(comment, report, recipients, request_id, u
 
 #  saves new comment and returns recipients to send notification to
 def save_comment(comment, report, request_id, user):
-    print(comment)
-    print(report)
     comment_to_save = Comment(
         comment=comment["content"],
         date_created=datetime.now(),
@@ -283,7 +281,7 @@ def save_comment(comment, report, request_id, user):
     )
     try:
         comment_relation.children.append(comment_to_save)
-        user.children.append(comment_to_save)
+        user.comments.append(comment_to_save)
         db.session.commit()
         return comment_relation.recipients
     except:

@@ -23,7 +23,7 @@ def check_if_token_in_blacklist(decrypted_token):
     return BlacklistToken.is_jti_blacklisted(jti)
 
 
-from app.models import Comment, CommentRelation, BlacklistToken, User
+from app.models import BlacklistToken, Comment, CommentRelation, Decision, User
 
 
 db.create_all()
