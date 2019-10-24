@@ -143,7 +143,7 @@ def get_qc_report_samples():
         lims_data = r.json()
         columnFeatures = dict()
         tables = dict()
-        # print(lims_data)
+        print(lims_data)
         for field in lims_data:
 
             if field == "dnaReportSamples":
@@ -168,6 +168,12 @@ def get_qc_report_samples():
                 )
                 tables[field] = build_table(
                     field, lims_data[field], columnFeatures, constants.libraryOrder
+                )
+
+            if field == "pathologyReportSamples":
+                columnFeatures = constants.pathologyColumns
+                tables[field] = build_table(
+                    field, lims_data[field], columnFeatures, constants.pathologyOrder
                 )
 
             if field == "attachments":
@@ -372,6 +378,11 @@ def build_table(reportTable, samples, columnFeatures, order):
                                 "<span class ='download-icon'><i class=%s>%s</i></span>"
                                 % ("material-icons", "cloud_download")
                             )
+                        elif orderedColumn == "SampleStatus":
+                            responseSample[dataFieldName] = "<div class=%s>%s</div>" % (
+                                'pathology-status',
+                                orderedSample,
+                            )
                         elif orderedColumn == "InvestigatorDecision":
                             # print(sample)
                             if dataFieldName in sample:
@@ -415,7 +426,11 @@ def build_pending_list(pendings):
         responsePending["date"] = pending.date_created
         responsePending["report"] = pending.report
 
-        responsePending["recipients"] = pending.recipients.replace(',', ',\n')
+        responsePending["recipients"] = (
+            "<div class='recipients-col'>"
+            + pending.recipients.replace(',', ',\n')
+            + "</div>"
+        )
         responsePending["show"] = (
             "<span class ='show-icon'><i class=%s>%s</i></span>"
             % ("material-icons", "forward")
@@ -429,7 +444,7 @@ def build_pending_list(pendings):
             {"data": "request_id", "readOnly": "true"},
             {"data": "date", "readOnly": "true"},
             {"data": "report", "readOnly": "true"},
-            {"data": "recipients", "readOnly": "true"},
+            {"data": "recipients", "readOnly": "true", "renderer": "html"},
             {"data": "show", "readOnly": "true", "renderer": "html"},
             # last column will be hidden in FE
             # {"data": "recordId", "readOnly": "true"},

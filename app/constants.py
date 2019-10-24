@@ -151,6 +151,35 @@ libraryColumns = {
         "readOnly": "true",
     },
 }
+pathologyColumns = {
+    "SampleId": {
+        "limsField": "SampleId",
+        "data": "sampleId",
+        "columnHeader": "IGO ID",
+        "readOnly": "true",
+    },
+    "RecordId": {
+        "limsField": "RecordId",
+        "data": "recordId",
+        "columnHeader": "Record ID",
+        "readOnly": "true",
+    },
+    "OtherSampleId": {
+        "limsField": "OtherSampleId",
+        "data": "otherSampleId",
+        "columnHeader": "Sample Name",
+        "readOnly": "true",
+    },
+    # "UserSampleID": "altId": {"limsField": "AltId", "data": "altId", "columnHeader": "AltId","readOnly":"true",},
+    "SampleStatus": {
+        "limsField": "SampleStatus",
+        "data": "sampleStatus",
+        "columnHeader": "QC Status",
+        "readOnly": "true",
+        "renderer": "html",
+    },
+}
+
 
 attachmentColumns = {
     "FileName": {
@@ -224,10 +253,18 @@ libraryOrder = [
     "RecordId",
 ]
 
+pathologyOrder = [ "SampleStatus", "SampleId", "OtherSampleId", "RecordId"]
+
 attachmentOrder = ["FileName", "Action", "RecordId"]
 
 
-pending_order = ["Request", "First notification sent on", "Report", "Recipients", "Show"]
+pending_order = [
+    "Request",
+    "First notification sent on",
+    "Report",
+    "Recipients",
+    "Show",
+]
 
 initial_email_template = {
     "from": "igoski@mskcc.org",
@@ -251,6 +288,6 @@ notification_email_template = {
 notification_email_template_html = {
     "from": "igoski@mskcc.org",
     "subject": "[SampleQC Test] %s New Comment",
-    "body": "Hello,<br><br>The following comment has been added to %s QC on project %s by IGO.<br><br>\"%s\"<br><br>Please proceed to <a href='https://igo.mskcc.org/sample-qc-dev'>igo.mskcc.og/sample-qc</a> and search for your project if you would like to reply.<br><br>Best,",
+    "body": "Hello,<br><br>The following comment has been added to %s QC on project %s by IGO.<br><br>\"%s\"<br><br>Please proceed to <a href='https://igo.mskcc.org/sample-qc-dev'>igo.mskcc.og/sample-qc</a> and search for your project if you would like to reply.<br><br>Thank you,",
     "footer": "<br><span style='color:#f29934; font-weight:bold;'>%s</span><br>%s<br><a href='http://cmo.mskcc.org/cmo/igo/'>Integrated Genomics Operation</a><br><a href='https://www.mskcc.org'>Memorial Sloan Kettering Cancer Center</a><br>T 646.888.3765<br>Follow us on <a href='https://www.instagram.com/genomics212/?hl=en'>Instagram</a> and <a href='https://twitter.com/genomics212?lang=en'>Twitter</a>!<br>",
 }

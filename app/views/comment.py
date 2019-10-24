@@ -260,6 +260,7 @@ def save_initial_comment_and_relation(comment, report, recipients, request_id, u
     )
     try:
         user.comments.append(comment)
+        user.commentrelations.append(comment_relation)
         comment_relation.children.append(comment)
         db.session.commit()
     except:
