@@ -16,6 +16,10 @@ from openpyxl import Workbook
 from tempfile import NamedTemporaryFile
 import pandas as pd
 from io import BytesIO
+import smtplib
+from email.mime.text import MIMEText
+from email.message import EmailMessage
+from datetime import datetime
 
 from openpyxl.writer.excel import save_virtual_workbook
 
@@ -35,6 +39,8 @@ LIMS_API_ROOT = app.config["LIMS_API_ROOT"]
 LIMS_USER = app.config["LIMS_USER"]
 LIMS_PW = app.config["LIMS_PW"]
 TMP_FOLDER = app.config["TMP_FOLDER"]
+NOTIFICATION_SENDER = app.config["NOTIFICATION_SENDER"]
+IGO_EMAIL = app.config["IGO_EMAIL"]
 
 qc_report = Blueprint("qc_report", __name__)
 
@@ -206,7 +212,21 @@ def get_qc_report_samples():
 def set_qc_investigator_decision():
     payload = request.get_json()
     print(payload)
-    if save_decision(payload["decisions"], payload["request_id"], payload["username"]):
+    username = payload["username"]
+    decisions = payload["decisions"]
+    request_id = payload["request_id"]
+    try:
+        decision_user = User.query.filter_by(username=username).first()
+
+        decision_to_save = Decision(
+            decisions=json.dumps(decisions),
+            request_id=request_id,
+            date_created=datetime.now(),
+            date_updated=datetime.now(),
+        )
+
+        decision_user.decisions.append(decision_to_save)
+
         r = s.post(
             LIMS_API_ROOT + "/setQcInvestigatorDecision",
             auth=(LIMS_USER, LIMS_PW),
@@ -214,11 +234,33 @@ def set_qc_investigator_decision():
             data=json.dumps(payload["decisions"]),
         )
 
-        return r.text
-    else:
-        responseObject = {'message': "Failed to submit."}
+        commentrelations = CommentRelation.query.filter_by(
+            request_id=payload["request_id"]
+        )
+        recipients = ""
+        for commentrelation in commentrelations:
+            if recipients == "":
+                recipients = commentrelation.recipients
+            else:
+                recipients = recipients + "," + commentrelation.recipients
 
+        send_decision_notification(
+            decision_to_save, decision_user, set(recipients.split(","))
+        )
+
+        db.session.commit()
+        return r.text
+    except:
+        print(traceback.print_exc())
+        db.session.rollback()
+
+        responseObject = {'message': "Failed to submit."}
         return make_response(jsonify(responseObject), 400, None)
+
+    # else:
+    #     responseObject = {'message': "Failed to submit."}
+
+    #     return make_response(jsonify(responseObject), 400, None)
 
 
 @qc_report.route("/getPending", methods=["GET"])
@@ -528,10 +570,40 @@ def save_decision(decisions, request_id, username):
         user.decisions.append(decision_to_save)
 
         db.session.commit()
-        return True
+        return decision_to_save
     except:
         print(traceback.print_exc())
 
         return None
 
-    return True
+    return None
+
+
+def send_decision_notification(decision, decision_user, recipients):
+    receiver_email = "wagnerl@mskcc.org,patrunoa@mskcc.org"
+    # receiver_email = recipients
+    sender_email = NOTIFICATION_SENDER
+    # print(receiver_email.split(","))
+
+    template = constants.decision_notification_email_template_html
+
+    content = (
+        template["body"] % (decision.request_id, decision_user.full_name)
+        + template["footer"]
+        + "<br><br>In production, this email would have been sent to:"
+        + ", ".join(recipients)
+    )
+    msg = MIMEText(content, "html")
+    msg['Subject'] = template["subject"] % decision.request_id
+
+    msg['From'] = sender_email
+    msg['To'] = receiver_email
+
+    # Send the message via our own SMTP server.
+    s = smtplib.SMTP('localhost')
+    # .sendmail(sender_email, receiver_email, message.as_string())
+    # if ENV = development
+    s.sendmail(sender_email, receiver_email.split(","), msg.as_string())
+    s.close()
+    print(msg.as_string())
+    return "done"

@@ -6,11 +6,8 @@ from sqlalchemy import update, text
 import traceback
 
 
-# Import smtplib for the actual sending function
 import smtplib
 from email.mime.text import MIMEText
-
-# Import the email modules we'll need
 from email.message import EmailMessage
 from datetime import datetime
 
@@ -76,24 +73,39 @@ def add_and_notify():
     try:
 
         user = User.query.filter_by(username=payload["comment"]["username"]).first()
-
-        recipients = save_comment(
-            payload["comment"], payload["report"], payload["request_id"], user
+        comment_relation = (
+            CommentRelation.query.filter(
+                CommentRelation.request_id == payload["request_id"]
+            )
+            .filter(CommentRelation.report == payload["report"])
+            .first()
         )
+        recipients = save_comment(
+            payload["comment"],
+            payload["report"],
+            payload["request_id"],
+            user,
+            comment_relation,
+        )
+
+        print(recipients)
         # if saving worked
         if recipients:
             if user.role == "lab_member":
+                recipients = recipients.split(",")
                 send_notification(
-                    IGO_EMAIL,
+                    set(recipients),
                     payload["comment"],
                     payload["request_id"],
                     payload["report"],
                     user,
                 )
             else:
-                recipients = IGO_EMAIL
+                # if a non-lab member comments, notify intial comments author
+                recipients = recipients + "," + comment_relation.author + "@mskcc.org"
+                recipients = recipients.split(",")
                 send_notification(
-                    recipients,
+                    set(recipients),
                     payload["comment"],
                     payload["request_id"],
                     payload["report"],
@@ -122,13 +134,41 @@ def add_to_all_and_notify():
         user = User.query.filter_by(username=payload["comment"]["username"]).first()
 
         for report in payload["reports"]:
+            comment_relation = (
+                CommentRelation.query.filter(
+                    CommentRelation.request_id == payload["request_id"]
+                )
+                .filter(CommentRelation.report == report)
+                .first()
+            )
             recipients = save_comment(
-                payload["comment"], report, payload["request_id"], user
+                payload["comment"],
+                report,
+                payload["request_id"],
+                user,
+                comment_relation,
             )
             if recipients:
-                send_notification(
-                    recipients, payload["comment"], payload["request_id"], report, user
-                )
+                if user.role == "lab_member":
+                    recipients = recipients.split(",")
+                    send_notification(
+                        set(recipients),
+                        payload["comment"],
+                        payload["request_id"],
+                        report,
+                        user,
+                    )
+                else:
+                    # if a non-lab member comments, notify intial comments author
+                    recipients = recipients + "," + comment_relation.author + "@mskcc.org"
+                    recipients = recipients.split(",")
+                    send_notification(
+                        set(recipients),
+                        payload["comment"],
+                        payload["request_id"],
+                        report,
+                        user,
+                    )
     except:
         print(traceback.print_exc())
         responseObject = {'message': "Failed to save comment"}
@@ -271,18 +311,14 @@ def save_initial_comment_and_relation(comment, report, recipients, request_id, u
 
 
 #  saves new comment and returns recipients to send notification to
-def save_comment(comment, report, request_id, user):
+def save_comment(comment, report, request_id, user, comment_relation):
     comment_to_save = Comment(
         comment=comment["content"],
         date_created=datetime.now(),
         date_updated=datetime.now(),
     )
     # comments that already have a exact relation:
-    comment_relation = (
-        CommentRelation.query.filter(CommentRelation.request_id == request_id)
-        .filter(CommentRelation.report == report)
-        .first()
-    )
+
     try:
         comment_relation.children.append(comment_to_save)
         user.comments.append(comment_to_save)
@@ -331,13 +367,15 @@ def send_notification(recipients, comment, request_id, report, user):
 
     template = constants.notification_email_template_html
 
+    print(recipients)
     name = user.full_name
 
-    content = template["body"] % (
-        report.split(' ')[0],
-        request_id,
-        comment["content"],
-    ) + template["footer"] % (name, user.title)
+    content = (
+        template["body"] % (report.split(' ')[0], request_id, comment["content"])
+        + template["footer"] % (name, user.title)
+        + "<br><br>In production, this email would have been sent to:"
+        + ", ".join(recipients)
+    )
     msg = MIMEText(content, "html")
     msg['Subject'] = template["subject"] % request_id
 
