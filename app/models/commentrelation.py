@@ -13,7 +13,7 @@ class CommentRelation(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     request_id = db.Column(db.String(40), nullable=False)
     report = db.Column(db.Text(), nullable=False)
-    auhor = db.Column(db.String(40), db.ForeignKey('users.username'))
+    author = db.Column(db.String(40), db.ForeignKey('users.username'))
     recipients = db.Column(db.Text(), nullable=False)
     date_created = db.Column(db.DateTime, nullable=False)
     date_updated = db.Column(db.DateTime, nullable=True)

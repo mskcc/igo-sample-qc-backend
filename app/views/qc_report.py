@@ -425,7 +425,7 @@ def build_pending_list(pendings):
         responsePending["request_id"] = pending.request_id
         responsePending["date"] = pending.date_created
         responsePending["report"] = pending.report
-
+        responsePending["author"] = pending.author
         responsePending["recipients"] = (
             "<div class='recipients-col'>"
             + pending.recipients.replace(',', ',\n')
@@ -444,6 +444,7 @@ def build_pending_list(pendings):
             {"data": "request_id", "readOnly": "true"},
             {"data": "date", "readOnly": "true"},
             {"data": "report", "readOnly": "true"},
+            {"data": "author", "readOnly": "true"},
             {"data": "recipients", "readOnly": "true", "renderer": "html"},
             {"data": "show", "readOnly": "true", "renderer": "html"},
             # last column will be hidden in FE

@@ -297,7 +297,7 @@ def save_comment(comment, report, request_id, user):
 
 
 def send_initial_notification(recipients, request_id, report, user):
-    receiver_email = "wagnerl@mskcc.org"
+    receiver_email = "wagnerl@mskcc.org,patrunoa@mskcc.org"
     # receiver_email = recipients
     sender_email = NOTIFICATION_SENDER
     # print(receiver_email.split(","))
@@ -324,7 +324,7 @@ def send_initial_notification(recipients, request_id, report, user):
 
 
 def send_notification(recipients, comment, request_id, report, user):
-    receiver_email = "wagnerl@mskcc.org"
+    receiver_email = "wagnerl@mskcc.org,patrunoa@mskcc.org"
     # receiver_email = recipients
     sender_email = NOTIFICATION_SENDER
     # print(receiver_email.split(","))

@@ -262,6 +262,7 @@ pending_order = [
     "Request",
     "First notification sent on",
     "Report",
+    "Author",
     "Recipients",
     "Show",
 ]
