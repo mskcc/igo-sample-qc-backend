@@ -77,7 +77,7 @@ def get_request_samples():
         if r.status_code == 200:
             return_text += r.text
             lims_data = r.json()
-
+            # print(lims_data)
             responseData = {}
 
             if "samples" in lims_data:
@@ -115,9 +115,9 @@ def get_request_samples():
             response = make_response(r.text, r.status_code, None)
             return response
 
-        response = make_response(return_text, 200, None)
-
-    return response
+    return make_response(
+        "Request not found or not associated with your username.", 404, None
+    )
 
 
 # queries SAPIO LIMS REST
