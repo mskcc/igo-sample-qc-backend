@@ -54,6 +54,7 @@ sharedColumns = {
         "limsField": "InvestigatorDecision",
         "data": "investigatorDecision",
         "columnHeader": "Investigator Decision",
+        "readOnly": "true",
         "type": "autocomplete",
         "strict": "true",
         "allowInvalid": "false",

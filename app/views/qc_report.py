@@ -136,42 +136,35 @@ def get_qc_report_samples():
         verify=False,
         data=data,
     )
-    # print(data)
-    # dnar = s.get(
-    #     LIMS_API_ROOT + "/api/getRequestSamples?request=" + request_id,
-    #     auth=(LIMS_USER, LIMS_PW),
-    #     verify=False,
-    # )
-    # print(constants.allColumns)
+    
     return_text = ""
     if r.status_code == 200:
         # assemble table data
         lims_data = r.json()
         columnFeatures = dict()
         tables = dict()
-        print(lims_data)
+
+        sharedColumns = constants.sharedColumns
+        # check if at least one investigator decision still has to be made
+        read_only = is_investigator_decision_read_only(lims_data)
+
+        sharedColumns["InvestigatorDecision"]["readOnly"] = read_only
         for field in lims_data:
 
             if field == "dnaReportSamples":
-                columnFeatures = mergeColumns(
-                    constants.sharedColumns, constants.dnaColumns
-                )
+                columnFeatures = mergeColumns(sharedColumns, constants.dnaColumns)
                 tables[field] = build_table(
                     field, lims_data[field], columnFeatures, constants.dnaOrder
                 )
 
             if field == "rnaReportSamples":
-                columnFeatures = mergeColumns(
-                    constants.sharedColumns, constants.rnaColumns
-                )
+                columnFeatures = mergeColumns(sharedColumns, constants.rnaColumns)
                 tables[field] = build_table(
                     field, lims_data[field], columnFeatures, constants.rnaOrder
                 )
 
             if field == "libraryReportSamples":
-                columnFeatures = mergeColumns(
-                    constants.sharedColumns, constants.libraryColumns
-                )
+                columnFeatures = mergeColumns(sharedColumns, constants.libraryColumns)
                 tables[field] = build_table(
                     field, lims_data[field], columnFeatures, constants.libraryOrder
                 )
@@ -188,24 +181,15 @@ def get_qc_report_samples():
                     field, lims_data[field], columnFeatures, constants.attachmentOrder
                 )
 
-        return make_response((jsonify(tables)), 200, None)
+        responseObject = {'tables': tables, 'read_only': read_only}
+        # print(responseObject)
+
+        return make_response(responseObject, 200, None)
     else:
 
         response = make_response(r.text, r.status_code, None)
         return response
 
-
-# r = s.get(
-#        LIMS_REST_API_ROOT + "/datarecord",
-#        headers=headers,
-#        auth=(LIMS_API_USER, LIMS_API_PW),
-#        params={
-#            "datatype": "QcReportDna",
-#            "field": "OtherSampleId",
-#            "values": [AdCCDK_1T, AdCCDK_7T, AdCCHW],
-#        },
-#        verify=False,
-#    )
 
 
 @qc_report.route("/setQCInvestigatorDecision", methods=["POST"])
@@ -257,10 +241,7 @@ def set_qc_investigator_decision():
         responseObject = {'message': "Failed to submit."}
         return make_response(jsonify(responseObject), 400, None)
 
-    # else:
-    #     responseObject = {'message': "Failed to submit."}
-
-    #     return make_response(jsonify(responseObject), 400, None)
+  make_response(jsonify(responseObject), 400, None)
 
 
 @qc_report.route("/getPending", methods=["GET"])
@@ -276,21 +257,6 @@ def get_pending():
         print(traceback.print_exc())
 
         return None
-
-    # if save_decision(payload["decisions"], payload["request_id"], payload["username"]):
-    #     r = s.post(
-    #         LIMS_API_ROOT + "/setQcInvestigatorDecision",
-    #         auth=(LIMS_USER, LIMS_PW),
-    #         verify=False,
-    #         data=json.dumps(payload["decisions"]),
-    #     )
-
-    #     return r.text
-    # else:
-    #     responseObject = {'message': "Failed to submit."}
-
-    #     return make_response(jsonify(responseObject), 400, None)
-    # return None
 
 
 @qc_report.route("/downloadAttachment", methods=["GET"])
@@ -607,3 +573,13 @@ def send_decision_notification(decision, decision_user, recipients):
     s.close()
     print(msg.as_string())
     return "done"
+
+
+# iterate over lims returned investigator decisions, set column to be editable if at least one decision is unfilled
+def is_investigator_decision_read_only(lims_data):
+    for field in lims_data:
+        if "dna" in field or "rna" in field or "library" in field:
+            for sample in lims_data[field]:
+                if not sample["investigatorDecision"]:
+                    return False
+    return True
