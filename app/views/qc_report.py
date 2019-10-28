@@ -136,7 +136,7 @@ def get_qc_report_samples():
         verify=False,
         data=data,
     )
-    
+
     return_text = ""
     if r.status_code == 200:
         # assemble table data
@@ -191,7 +191,6 @@ def get_qc_report_samples():
         return response
 
 
-
 @qc_report.route("/setQCInvestigatorDecision", methods=["POST"])
 def set_qc_investigator_decision():
     payload = request.get_json()
@@ -241,7 +240,7 @@ def set_qc_investigator_decision():
         responseObject = {'message': "Failed to submit."}
         return make_response(jsonify(responseObject), 400, None)
 
-  make_response(jsonify(responseObject), 400, None)
+    return make_response(jsonify(responseObject), 400, None)
 
 
 @qc_report.route("/getPending", methods=["GET"])
