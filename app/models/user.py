@@ -1,5 +1,6 @@
 import datetime
 from app import db
+
 # from flask_sqlalchemy import event
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
@@ -91,6 +92,33 @@ class User(db.Model):
 
         conn.unbind_s()
         return result
+
+    @property
+    def is_authenticated(self):
+        return True
+
+    @property
+    def is_anonymous(self):
+        return False
+
+    @property
+    def is_active(self):
+        return True
+
+    def get_id(self):
+        return str(self.id)
+
+    def get_username(self):
+        return str(self.username)
+
+    def get_full_name(self):
+        return str(self.full_name)
+
+    def get_title(self):
+        return str(self.title)
+
+    def get_role(self):
+        return str(self.role)
 
 
 # def insert_initial_values(*args, **kwargs):

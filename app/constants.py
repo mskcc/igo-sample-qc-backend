@@ -59,7 +59,7 @@ sharedColumns = {
         "strict": "true",
         "allowInvalid": "false",
         "trimDropdown": "false",
-        "picklistName": "InvestigatorDecision",
+        "picklistName": "InvestigatorDecisionCustomers",
     },
     "Comments": {
         "limsField": "Comments",
