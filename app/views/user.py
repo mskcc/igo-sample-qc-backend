@@ -91,7 +91,7 @@ def login():
 
             # Create our JWTs
             # default expiration 15 minutes
-            access_token = create_access_token(identity=username)
+            access_token = create_access_token(identity=username, expires_delta=expires)
 
             # default expiration 30 days, changed to 12 hours
             expires = datetime.timedelta(hours=12)

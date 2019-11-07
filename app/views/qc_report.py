@@ -404,7 +404,7 @@ def build_table(reportTable, samples, columnFeatures, order):
                         elif orderedColumn == "Action":
 
                             responseSample[dataFieldName] = (
-                                "<span class ='download-icon'><i class=%s>%s</i></span>"
+                                "<div class ='download-icon'><i class=%s>%s</i></div>"
                                 % ("material-icons", "cloud_download")
                             )
                         elif orderedColumn == "SampleStatus":
@@ -426,7 +426,7 @@ def build_table(reportTable, samples, columnFeatures, order):
                         if orderedColumn == "Action":
 
                             responseSample[dataFieldName] = (
-                                "<span class ='download-icon'><i class=%s>%s</i></span>"
+                                "<div class ='download-icon'><i class=%s>%s</i></div>"
                                 % ("material-icons", "cloud_download")
                             )
                         else:
