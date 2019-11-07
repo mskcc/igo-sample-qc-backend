@@ -82,7 +82,7 @@ sharedColumns = {
     "Volume": {
         "limsField": "Volume",
         "data": "volume",
-        "columnHeader": "Volume",
+        "columnHeader": "Volume (ul)",
         "readOnly": "true",
     },
     "TotalMass": {
@@ -97,7 +97,7 @@ dnaColumns = {
     "Din": {
         "limsField": "Din",
         "data": "din",
-        "columnHeader": "Din",
+        "columnHeader": "DIN",
         "readOnly": "true",
     },
     "PercentHuman": {

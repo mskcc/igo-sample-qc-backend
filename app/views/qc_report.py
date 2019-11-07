@@ -57,6 +57,7 @@ s = requests.Session()
 # returns request level information including a list of samples in the request
 # queries IGO LIMS REST
 
+
 @qc_report.route("/getRequestSamples", methods=['GET'])
 @jwt_required
 def get_request_samples():
@@ -133,8 +134,9 @@ def get_request_samples():
 
 # queries SAPIO LIMS REST
 
+
 @qc_report.route("/getQcReportSamples", methods=["POST"])
-# @jwt_required
+@jwt_required
 def get_qc_report_samples():
     login_user(load_user(get_jwt_identity()))
     data = dict()
