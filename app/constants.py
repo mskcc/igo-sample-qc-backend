@@ -208,12 +208,12 @@ attachmentColumns = {
 
 # last column is always RecordId. Needed to set investigator decision efficiently
 dnaOrder = [
+    "OtherSampleId",
     "Recipe",
     "IgoQcRecommendation",
     "Comments",
     "InvestigatorDecision",
     "SampleId",
-    "OtherSampleId",
     "Concentration",
     "Volume",
     "TotalMass",
@@ -226,12 +226,12 @@ dnaOrder = [
 ]
 
 rnaOrder = [
+    "OtherSampleId",
     "Recipe",
     "IgoQcRecommendation",
     "Comments",
     "InvestigatorDecision",
     "SampleId",
-    "OtherSampleId",
     "Concentration",
     "Volume",
     "TotalMass",
@@ -243,12 +243,12 @@ rnaOrder = [
 ]
 
 libraryOrder = [
+    "OtherSampleId",
     "Recipe",
     "IgoQcRecommendation",
     "Comments",
     "InvestigatorDecision",
     "SampleId",
-    "OtherSampleId",
     "AvgSize",
     "Concentration",
     "Volume",
@@ -257,7 +257,7 @@ libraryOrder = [
     "RecordId",
 ]
 
-pathologyOrder = ["SampleStatus", "SampleId", "OtherSampleId", "RecordId"]
+pathologyOrder = ["OtherSampleId", "SampleStatus", "SampleId", "RecordId"]
 
 attachmentOrder = ["FileName", "Action", "RecordId"]
 

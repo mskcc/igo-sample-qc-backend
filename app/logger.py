@@ -3,11 +3,13 @@ from flask import request
 import inspect
 from flask_login import current_user
 
-def log_lims(lims_response):
+
+def log_lims(lims_response, username="anonymous"):
     msg = (
         "\n"
         + "\n---LIMS Request---\n"
-        + "User: " + str(current_user.username if current_user.username else "anynymous")
+        + "User: "
+        + username
         + "\n"
         + 'Endpoint: '
         + str(lims_response.url)
@@ -21,26 +23,29 @@ def log_lims(lims_response):
     app.logger.info(msg)
 
 
-def log_info(msg):
-    app.logger.info(format(msg, "Flask") )
+def log_info(msg, username="anonymous"):
+    app.logger.info(format(msg, username, "Flask"))
 
 
-def log_error(msg):   
-    app.logger.error(format(msg, "Flask"))
+def log_error(msg):
+    app.logger.error(format(msg, username, "Flask"))
 
 
-def format(msg, source):
-    
+def format(msg, username, source):
+
     return (
         "\n---"
-        + source 
+        + source
         + " Request---\n"
         + "Endpoint: "
         + str(request.path)
         + "\n"
         + "Function: "
-        + inspect.stack()[2][3]
+        + inspect.stack()[3][3]
+        + "\n"
+        + "User: "
+        + username
+        + "\n"
         + "\n"
         + str(msg)
-        
     )

@@ -8,6 +8,12 @@ from flask import (
     send_from_directory,
     send_file,
 )
+from flask_jwt_extended import (
+    jwt_required,
+    jwt_refresh_token_required,
+    get_jwt_identity,
+)
+from flask_login import login_user, logout_user, current_user
 import requests
 from datetime import datetime
 import os.path
@@ -29,6 +35,7 @@ import copy
 import traceback
 
 from app import app, constants, db
+from app.logger import log_info, log_error, log_lims
 from app.models import Comment, CommentRelation, Decision, User
 
 # MORE IMPORTANT THAN IT SHOULD BE
@@ -49,7 +56,9 @@ s = requests.Session()
 
 # returns request level information including a list of samples in the request
 # queries IGO LIMS REST
+
 @qc_report.route("/getRequestSamples", methods=['GET'])
+@jwt_required
 def get_request_samples():
     return_text = ""
 
@@ -61,6 +70,7 @@ def get_request_samples():
     user_authorized_for_request = (
         role == "lab_member" or is_user_authorized_for_request(request_id, username)
     )
+    print(get_jwt_identity())
     # return is_dec_maker
     if user_authorized_for_request == False:
         response = make_response(
@@ -74,6 +84,7 @@ def get_request_samples():
             auth=(LIMS_USER, LIMS_PW),
             verify=False,
         )
+
         if r.status_code == 200:
             return_text += r.text
             lims_data = r.json()
@@ -121,12 +132,16 @@ def get_request_samples():
 
 
 # queries SAPIO LIMS REST
+
 @qc_report.route("/getQcReportSamples", methods=["POST"])
+# @jwt_required
 def get_qc_report_samples():
+    login_user(load_user(get_jwt_identity()))
     data = dict()
     payload = request.get_json()["data"]
     request_id = payload["request"]
     samples = payload["samples"]
+    username = payload["username"]
     data['request'] = request_id
     data['samples'] = samples
 
@@ -141,6 +156,7 @@ def get_qc_report_samples():
     if r.status_code == 200:
         # assemble table data
         lims_data = r.json()
+        print(lims_data)
         columnFeatures = dict()
         tables = dict()
 
@@ -194,7 +210,7 @@ def get_qc_report_samples():
 @qc_report.route("/setQCInvestigatorDecision", methods=["POST"])
 def set_qc_investigator_decision():
     payload = request.get_json()
-    print(payload)
+
     username = payload["username"]
     decisions = payload["decisions"]
     request_id = payload["request_id"]
@@ -216,6 +232,7 @@ def set_qc_investigator_decision():
             verify=False,
             data=json.dumps(payload["decisions"]),
         )
+        log_info(json.dumps(payload["decisions"]), username)
 
         commentrelations = CommentRelation.query.filter_by(
             request_id=payload["request_id"]
@@ -246,6 +263,7 @@ def set_qc_investigator_decision():
 @qc_report.route("/getPending", methods=["GET"])
 def get_pending():
     # get request ids from commentrelation where not in request id from decisions
+
     try:
         query = db.session.query(CommentRelation)
         subquery = db.session.query(Decision.request_id)
@@ -345,6 +363,8 @@ def build_table(reportTable, samples, columnFeatures, order):
 
         for sample in samples:
             responseSample = {}
+            if "hideFromSampleQC" in sample and sample["hideFromSampleQC"] == True:
+                continue
             for orderedColumn in order:
 
                 formatted_ordered_col = orderedColumn[0].lower() + orderedColumn[1:]
@@ -507,10 +527,6 @@ def tmp_file_exists(file_name):
     return os.path.exists(TMP_FOLDER + file_name)
 
 
-def log_info(message):
-    print(message)
-
-
 # returns true if user is associated with request as recipient
 # returns false if request has no inital comment OR user is not associated
 def is_user_authorized_for_request(request_id, username):
@@ -570,7 +586,7 @@ def send_decision_notification(decision, decision_user, recipients):
     # if ENV = development
     s.sendmail(sender_email, receiver_email.split(","), msg.as_string())
     s.close()
-    print(msg.as_string())
+    log_info(msg.as_string(), decision_user.username)
     return "done"
 
 
@@ -582,3 +598,87 @@ def is_investigator_decision_read_only(lims_data):
                 if not sample["investigatorDecision"]:
                     return False
     return True
+
+
+def load_user(username):
+    return User.query.filter_by(username=username).first()
+
+
+@app.after_request
+def after_request(response):
+
+    # response.headers.add("Access-Control-Allow-Origin", "*")
+    response.headers.add("Access-Control-Allow-Headers", "Content-Type,Authorization")
+    response.headers.add("Access-Control-Allow-Methods", "GET,PUT,POST,DELETE")
+    request_args = {key + ":" + request.args[key] for key in request.args}
+
+    if response.is_streamed == True:
+        response_message = (
+            "\n---Flask Request---\n"
+            + "\n".join(request_args)
+            + "\n"
+            + "Streamed Data"
+            + "\n"
+        )
+
+    elif request.path == "/addAndNotify" or request.path == "/addAndNotifyInitial":
+        return response
+
+    elif (
+        request.path
+        == "/getAttachmentFile"
+        # or request.path == "/storeReceipt"
+        # or request.path == "/getReceipt"
+        # or request.path == "/exportExcel"
+    ):
+        response_message = (
+            "Args: "
+            + "\n".join(request_args)
+            + "Data: File Data"
+            + "\n"
+            + "User: "
+            + str(get_jwt_identity())
+            + "\n"
+        )
+    # if "/columnDefinition" in request.path or "/initialState" in request.path:
+    #     response_message = (
+    #         'Args: '
+    #         + "\n".join(request_args)
+    #         + "\n"
+    #         + "User: "
+    #         + str(get_jwt_identity())
+    #         + "\n"
+    #     )
+    else:
+        if len(response.data) > 500:
+
+            response_message = (
+                'Args: '
+                + "\n".join(request_args)
+                + "\n"
+                + "Data: "
+                + str(response.data[:500])
+                + "[...]"
+                + "\n"
+                + "User: "
+                + str(get_jwt_identity())
+                + "\n"
+            )
+        else:
+            response_message = (
+                'Args: '
+                + "\n".join(request_args)
+                + "\n"
+                + "Data: "
+                + str(response.data)
+                + "\n"
+                + "User: "
+                + str(get_jwt_identity())
+                + "\n"
+            )
+    if hasattr(current_user, 'username'):
+        username = current_user.username
+    else:
+        username = "anonymous"
+    log_info(response_message, username)
+    return response
