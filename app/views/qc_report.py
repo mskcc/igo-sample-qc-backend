@@ -98,7 +98,7 @@ def get_request_samples():
                 responseData["recipients"] = {}
 
                 responseData["request"]["requestId"] = lims_data["requestId"]
-                responseData["request"]["LabHeadName"] = lims_data["labHeadName"]
+                responseData["request"]["labHeadName"] = lims_data["labHeadName"]
                 responseData["request"]["investigatorName"] = lims_data[
                     "investigatorName"
                 ]
@@ -229,7 +229,7 @@ def set_qc_investigator_decision():
         decision_user.decisions.append(decision_to_save)
 
         r = s.post(
-            LIMS_API_ROOT + "/setQcInvestigatorDecision",
+            LIMS_API_ROOT + "/setInvestigatorDecision",
             auth=(LIMS_USER, LIMS_PW),
             verify=False,
             data=json.dumps(payload["decisions"]),
@@ -335,8 +335,9 @@ def build_table(reportTable, samples, columnFeatures, order):
                     if orderedColumn == "Concentration":
                         responseHeaders.append(
                             columnFeatures[orderedColumn]["columnHeader"]
-                            + ' in '
+                            + ' ('
                             + samples[0]['concentrationUnits']
+                            + ')'
                         )
                     else:
                         responseHeaders.append(
