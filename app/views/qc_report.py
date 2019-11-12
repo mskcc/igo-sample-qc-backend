@@ -85,11 +85,12 @@ def get_request_samples():
             auth=(LIMS_USER, LIMS_PW),
             verify=False,
         )
+        print(r)
 
         if r.status_code == 200:
             return_text += r.text
             lims_data = r.json()
-            # print(lims_data)
+            print(lims_data)
             responseData = {}
 
             if "samples" in lims_data:
@@ -138,7 +139,8 @@ def get_request_samples():
 @qc_report.route("/getQcReportSamples", methods=["POST"])
 @jwt_required
 def get_qc_report_samples():
-    login_user(load_user(get_jwt_identity()))
+    user = load_user(get_jwt_identity())
+    login_user(user)
     data = dict()
     payload = request.get_json()["data"]
     request_id = payload["request"]
@@ -147,12 +149,29 @@ def get_qc_report_samples():
     data['request'] = request_id
     data['samples'] = samples
 
+    user_authorized_for_request = (
+        user.role == "lab_member" or is_user_authorized_for_request(request_id, username)
+    )
     r = s.post(
         LIMS_API_ROOT + "/getQcReportSamples",
         auth=(LIMS_USER, LIMS_PW),
         verify=False,
         data=data,
     )
+
+
+    # if user, get commentrelations and only show reports that are ready
+
+    # comment_relations = CommentRelation.query.filter(
+    #     CommentRelation.request_id == request
+    # )
+    # print(comment_relations)
+
+    # if comment_relations:
+    #     reports = []
+    #     for comment_relation in comment_relations:
+    #         print(comment_relation)
+    #         reports.push[comment_relation.report]
 
     return_text = ""
     if r.status_code == 200:
@@ -535,7 +554,7 @@ def tmp_file_exists(file_name):
 def is_user_authorized_for_request(request_id, username):
     commentrelations = CommentRelation.query.filter_by(request_id=request_id)
     for relation in commentrelations:
-        if username in relation.recipients:
+        if username in relation.recipients or username in relation.author:
             return True
     return False
 
