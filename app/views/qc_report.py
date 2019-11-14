@@ -85,12 +85,12 @@ def get_request_samples():
             auth=(LIMS_USER, LIMS_PW),
             verify=False,
         )
-        print(r)
+        # print(r)
 
         if r.status_code == 200:
             return_text += r.text
             lims_data = r.json()
-            print(lims_data)
+            # print(lims_data)
             responseData = {}
 
             if "samples" in lims_data:
@@ -149,83 +149,135 @@ def get_qc_report_samples():
     data['request'] = request_id
     data['samples'] = samples
 
-    user_authorized_for_request = (
-        user.role == "lab_member" or is_user_authorized_for_request(request_id, username)
-    )
-    r = s.post(
-        LIMS_API_ROOT + "/getQcReportSamples",
-        auth=(LIMS_USER, LIMS_PW),
-        verify=False,
-        data=data,
-    )
-
-
-    # if user, get commentrelations and only show reports that are ready
-
-    # comment_relations = CommentRelation.query.filter(
-    #     CommentRelation.request_id == request
-    # )
-    # print(comment_relations)
-
-    # if comment_relations:
-    #     reports = []
-    #     for comment_relation in comment_relations:
-    #         print(comment_relation)
-    #         reports.push[comment_relation.report]
-
-    return_text = ""
-    if r.status_code == 200:
-        # assemble table data
-        lims_data = r.json()
-        print(lims_data)
-        columnFeatures = dict()
-        tables = dict()
-
-        sharedColumns = constants.sharedColumns
-        # check if at least one investigator decision still has to be made
-        read_only = is_investigator_decision_read_only(lims_data)
-
-        sharedColumns["InvestigatorDecision"]["readOnly"] = read_only
-        for field in lims_data:
-
-            if field == "dnaReportSamples":
-                columnFeatures = mergeColumns(sharedColumns, constants.dnaColumns)
-                tables[field] = build_table(
-                    field, lims_data[field], columnFeatures, constants.dnaOrder
-                )
-
-            if field == "rnaReportSamples":
-                columnFeatures = mergeColumns(sharedColumns, constants.rnaColumns)
-                tables[field] = build_table(
-                    field, lims_data[field], columnFeatures, constants.rnaOrder
-                )
-
-            if field == "libraryReportSamples":
-                columnFeatures = mergeColumns(sharedColumns, constants.libraryColumns)
-                tables[field] = build_table(
-                    field, lims_data[field], columnFeatures, constants.libraryOrder
-                )
-
-            if field == "pathologyReportSamples":
-                columnFeatures = constants.pathologyColumns
-                tables[field] = build_table(
-                    field, lims_data[field], columnFeatures, constants.pathologyOrder
-                )
-
-            if field == "attachments":
-                columnFeatures = constants.attachmentColumns
-                tables[field] = build_table(
-                    field, lims_data[field], columnFeatures, constants.attachmentOrder
-                )
-
-        responseObject = {'tables': tables, 'read_only': read_only}
-        # print(responseObject)
-
-        return make_response(responseObject, 200, None)
+    is_lab_member = user.role == "lab_member"
+    reports = []
+    if is_lab_member:
+        is_authorized_for_request = True
     else:
+        is_authorized_for_request = is_user_authorized_for_request(request_id, username)
 
-        response = make_response(r.text, r.status_code, None)
-        return response
+    if not is_lab_member and not is_authorized_for_request:
+        return make_response(
+            "Request not found or not associated with your username.", 404, None
+        )
+    try:
+        # authorized in some way, fetch data
+        r = s.post(
+            LIMS_API_ROOT + "/getQcReportSamples",
+            auth=(LIMS_USER, LIMS_PW),
+            verify=False,
+            data=data,
+        )
+
+        # if not lab member but auth'd, get commentrelations and only show reports that are ready
+
+        if not is_lab_member and is_authorized_for_request:
+            comment_relations = CommentRelation.query.filter(
+                CommentRelation.request_id == request_id
+            )
+            # print(comment_relations)
+            if comment_relations:
+
+                for comment_relation in comment_relations:
+
+                    # print(comment_relation)
+                    # print(comment_relation.report)
+                    reports.append(str(comment_relation.report))
+        print(reports, 'reports')
+        return_text = ""
+        if r.status_code == 200:
+            # assemble table data
+            lims_data = r.json()
+            # print(lims_data)
+            columnFeatures = dict()
+            tables = dict()
+
+            sharedColumns = constants.sharedColumns
+            # check if at least one investigator decision still has to be made
+            read_only = is_investigator_decision_read_only(lims_data)
+
+            sharedColumns["InvestigatorDecision"]["readOnly"] = read_only
+
+            print(is_authorized_for_request, "is_authorized_for_request")
+            print(is_lab_member, "is_lab_member")
+            print(reports, "reports")
+            print(
+                is_lab_member or (is_authorized_for_request and "RNA Report" in reports)
+            )
+            for field in lims_data:
+
+                if field == "dnaReportSamples":
+                    if is_lab_member or (
+                        is_authorized_for_request and "DNA Report" in reports
+                    ):
+                        columnFeatures = mergeColumns(
+                            sharedColumns, constants.dnaColumns
+                        )
+                        tables[field] = build_table(
+                            field, lims_data[field], columnFeatures, constants.dnaOrder
+                        )
+
+                if field == "rnaReportSamples":
+                    if is_lab_member or (
+                        is_authorized_for_request and "RNA Report" in reports
+                    ):
+                        columnFeatures = mergeColumns(
+                            sharedColumns, constants.rnaColumns
+                        )
+                        tables[field] = build_table(
+                            field, lims_data[field], columnFeatures, constants.rnaOrder
+                        )
+
+                if field == "libraryReportSamples":
+                    if is_lab_member or (
+                        is_authorized_for_request and "Library Report" in reports
+                    ):
+                        columnFeatures = mergeColumns(
+                            sharedColumns, constants.libraryColumns
+                        )
+                        tables[field] = build_table(
+                            field,
+                            lims_data[field],
+                            columnFeatures,
+                            constants.libraryOrder,
+                        )
+
+                if field == "pathologyReportSamples":
+                    if is_lab_member or (
+                        is_authorized_for_request and "Pathology Report" in reports
+                    ):
+                        columnFeatures = constants.pathologyColumns
+                        tables[field] = build_table(
+                            field,
+                            lims_data[field],
+                            columnFeatures,
+                            constants.pathologyOrder,
+                        )
+
+                if field == "attachments":
+                    columnFeatures = constants.attachmentColumns
+                    tables[field] = build_table(
+                        field,
+                        lims_data[field],
+                        columnFeatures,
+                        constants.attachmentOrder,
+                    )
+
+            responseObject = {'tables': tables, 'read_only': read_only}
+            print(responseObject)
+
+            return make_response(responseObject, 200, None)
+        else:
+
+            response = make_response(r.text, r.status_code, None)
+            return response
+    except:
+        print(traceback.print_exc())
+        response = make_response(
+            "The backend is experiencing some issues, please try again later or contact an admin.",
+            500,
+            None,
+        )
 
 
 @qc_report.route("/setQCInvestigatorDecision", methods=["POST"])
@@ -422,7 +474,8 @@ def build_table(reportTable, samples, columnFeatures, order):
                                 )
 
                         elif orderedColumn == "Action":
-
+                            print(dataFieldName, 'firstsample')
+                            print(responseSample, 'firstsample')
                             responseSample[dataFieldName] = (
                                 "<div class ='download-icon'><i class=%s>%s</i></div>"
                                 % ("material-icons", "cloud_download")
@@ -444,16 +497,19 @@ def build_table(reportTable, samples, columnFeatures, order):
 
                     else:
                         if orderedColumn == "Action":
-
                             responseSample[dataFieldName] = (
-                                "<div class ='download-icon'><i class=%s>%s</i></div>"
+                                "<div record-id='"
+                                + str(sample['recordId'])
+                                + "' file-name='"
+                                + str(sample['fileName'])
+                                + "' class ='download-icon'><i class=%s>%s</i></div>"
                                 % ("material-icons", "cloud_download")
                             )
                         else:
                             responseSample[dataFieldName] = ""
                 except:
                     print(traceback.print_exc())
-                    print(sample)
+                    # print(sample)
                     # Excpected column not found in LIMS result, return it to FE anyway.
                     responseSample[dataFieldName] = ""
             responseSamples.append(responseSample)
@@ -481,8 +537,8 @@ def build_pending_list(pendings):
             + "</div>"
         )
         responsePending["show"] = (
-            "<span class ='show-icon'><i class=%s>%s</i></span>"
-            % ("material-icons", "forward")
+            "<span pending-id='%s' class ='show-icon'><i class=%s>%s</i></span>"
+            % (pending.request_id, "material-icons", "forward")
         )
 
         responsePendings.append(responsePending)
