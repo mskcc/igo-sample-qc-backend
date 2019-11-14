@@ -183,7 +183,7 @@ def get_qc_report_samples():
                     # print(comment_relation)
                     # print(comment_relation.report)
                     reports.append(str(comment_relation.report))
-        print(reports, 'reports')
+        # print(reports, 'reports')
         return_text = ""
         if r.status_code == 200:
             # assemble table data
@@ -198,12 +198,6 @@ def get_qc_report_samples():
 
             sharedColumns["InvestigatorDecision"]["readOnly"] = read_only
 
-            print(is_authorized_for_request, "is_authorized_for_request")
-            print(is_lab_member, "is_lab_member")
-            print(reports, "reports")
-            print(
-                is_lab_member or (is_authorized_for_request and "RNA Report" in reports)
-            )
             for field in lims_data:
 
                 if field == "dnaReportSamples":
@@ -264,7 +258,7 @@ def get_qc_report_samples():
                     )
 
             responseObject = {'tables': tables, 'read_only': read_only}
-            print(responseObject)
+            # print(responseObject)
 
             return make_response(responseObject, 200, None)
         else:

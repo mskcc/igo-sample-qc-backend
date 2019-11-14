@@ -160,7 +160,9 @@ def add_to_all_and_notify():
                     )
                 else:
                     # if a non-lab member comments, notify intial comments author
-                    recipients = recipients + "," + comment_relation.author + "@mskcc.org"
+                    recipients = (
+                        recipients + "," + comment_relation.author + "@mskcc.org"
+                    )
                     recipients = recipients.split(",")
                     send_notification(
                         set(recipients),
@@ -332,17 +334,19 @@ def save_comment(comment, report, request_id, user, comment_relation):
     return
 
 
-def send_initial_notification(recipients, request_id, report, user):
-    receiver_email = "wagnerl@mskcc.org,patrunoa@mskcc.org"
+def send_initial_notification(recipients, request_id, report, author):
+    receiver_email = (
+        "wagnerl@mskcc.org,patrunoa@mskcc.org," + author.username + "@mskcc.org"
+    )
     # receiver_email = recipients
     sender_email = NOTIFICATION_SENDER
     # print(receiver_email.split(","))
 
     template = constants.initial_email_template_html
-    name = user.full_name
+    name = author.full_name
     content = template["body"] % (report.split(' ')[0], request_id) + template[
         "footer"
-    ] % (name, user.title)
+    ] % (name, author.title)
     msg = MIMEText(content, "html")
     msg['Subject'] = template["subject"] % request_id
 
@@ -359,8 +363,10 @@ def send_initial_notification(recipients, request_id, report, user):
     return "done"
 
 
-def send_notification(recipients, comment, request_id, report, user):
-    receiver_email = "wagnerl@mskcc.org,patrunoa@mskcc.org"
+def send_notification(recipients, comment, request_id, report, author):
+    receiver_email = (
+        "wagnerl@mskcc.org,patrunoa@mskcc.org," + author.username + "@mskcc.org"
+    )
     # receiver_email = recipients
     sender_email = NOTIFICATION_SENDER
     # print(receiver_email.split(","))
@@ -368,11 +374,11 @@ def send_notification(recipients, comment, request_id, report, user):
     template = constants.notification_email_template_html
 
     print(recipients)
-    name = user.full_name
+    name = author.full_name
 
     content = (
         template["body"] % (report.split(' ')[0], request_id, comment["content"])
-        + template["footer"] % (name, user.title)
+        + template["footer"] % (name, author.title)
         + "<br><br>In production, this email would have been sent to:"
         + ", ".join(recipients)
     )
