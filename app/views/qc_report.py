@@ -523,6 +523,8 @@ def build_pending_list(pendings):
         responsePending = {}
         responsePending["request_id"] = pending.request_id
         responsePending["date"] = pending.date_created
+        responsePending["most_recent_date"] = pending.children[-1].date_created
+        # print(pending.children[-1].date_created, pending.request_id)
         responsePending["report"] = pending.report
         responsePending["author"] = pending.author
         responsePending["recipients"] = (
@@ -530,10 +532,28 @@ def build_pending_list(pendings):
             + pending.recipients.replace(',', ',\n')
             + "</div>"
         )
+        responsePending["lab_notifications"] = 0
+        responsePending["pm_notifications"] = 0
+        responsePending["user_replies"] = 0
+
         responsePending["show"] = (
             "<span pending-id='%s' class ='show-icon'><i class=%s>%s</i></span>"
             % (pending.request_id, "material-icons", "forward")
         )
+        # print('get comment authors user role')
+        
+        
+
+
+        comments = pending.children
+        for comment in comments:
+            if comment.author.role == "lab_member":
+                responsePending["lab_notifications"] += 1
+            if comment.author.role == "project_manager":
+                responsePending["pm_notifications"] += 1
+            if comment.author.role == "user":
+                responsePending["user_replies"] += 1
+
 
         responsePendings.append(responsePending)
 
@@ -542,12 +562,15 @@ def build_pending_list(pendings):
         "columnFeatures": [
             {"data": "request_id", "readOnly": "true"},
             {"data": "date", "readOnly": "true"},
+            {"data": "most_recent_date", "readOnly": "true"},
             {"data": "report", "readOnly": "true"},
             {"data": "author", "readOnly": "true"},
+            {"data": "lab_notifications", "readOnly": "true"},
+            {"data": "pm_notifications", "readOnly": "true"},
+            {"data": "user_replies", "readOnly": "true"},
             {"data": "recipients", "readOnly": "true", "renderer": "html"},
             {"data": "show", "readOnly": "true", "renderer": "html"},
-            # last column will be hidden in FE
-            # {"data": "recordId", "readOnly": "true"},
+            
         ],
         "columnHeaders": constants.pending_order,
     }

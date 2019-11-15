@@ -264,9 +264,13 @@ attachmentOrder = ["FileName", "Action", "RecordId"]
 
 pending_order = [
     "Request",
-    "First notification sent on",
+    "First notification",
+    "Most recent notification",
     "Report",
     "Author",
+    "Lab Notifications",
+    "PM Notifications",
+    "User Replies",
     "Recipients",
     "Show",
 ]
