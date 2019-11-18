@@ -34,7 +34,7 @@ import re
 import copy
 import traceback
 
-from app import app, constants, db
+from app import app, constants, db, notify
 from app.logger import log_info, log_error, log_lims
 from app.models import Comment, CommentRelation, Decision, User
 
@@ -311,7 +311,7 @@ def set_qc_investigator_decision():
             else:
                 recipients = recipients + "," + commentrelation.recipients
 
-        send_decision_notification(
+        notify.send_decision_notification(
             decision_to_save, decision_user, set(recipients.split(","))
         )
 
@@ -653,36 +653,6 @@ def save_decision(decisions, request_id, username):
         return None
 
     return None
-
-
-def send_decision_notification(decision, decision_user, recipients):
-    receiver_email = "wagnerl@mskcc.org,patrunoa@mskcc.org"
-    # receiver_email = recipients
-    sender_email = NOTIFICATION_SENDER
-    # print(receiver_email.split(","))
-
-    template = constants.decision_notification_email_template_html
-
-    content = (
-        template["body"] % (decision.request_id, decision_user.full_name)
-        + template["footer"]
-        + "<br><br>In production, this email would have been sent to:"
-        + ", ".join(recipients)
-    )
-    msg = MIMEText(content, "html")
-    msg['Subject'] = template["subject"] % decision.request_id
-
-    msg['From'] = sender_email
-    msg['To'] = receiver_email
-
-    # Send the message via our own SMTP server.
-    s = smtplib.SMTP('localhost')
-    # .sendmail(sender_email, receiver_email, message.as_string())
-    # if ENV = development
-    s.sendmail(sender_email, receiver_email.split(","), msg.as_string())
-    s.close()
-    log_info(msg.as_string(), decision_user.username)
-    return "done"
 
 
 # iterate over lims returned investigator decisions, set column to be editable if at least one decision is unfilled

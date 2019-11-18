@@ -1,5 +1,5 @@
 from flask import Flask, Blueprint, json, jsonify, request, make_response
-from app import app, db, constants
+from app import app, db, constants, notify
 from app.models import Comment, CommentRelation, User
 from sqlalchemy import update, text
 
@@ -46,7 +46,7 @@ def add_and_notify_initial():
             )
             if recipients:
 
-                send_initial_notification(
+                notify.send_initial_notification(
                     recipients, payload["request_id"], report, user
                 )
             else:
@@ -93,7 +93,7 @@ def add_and_notify():
         if recipients:
             if user.role == "lab_member":
                 recipients = recipients.split(",")
-                send_notification(
+                notify.send_notification(
                     set(recipients),
                     payload["comment"],
                     payload["request_id"],
@@ -104,7 +104,7 @@ def add_and_notify():
                 # if a non-lab member comments, notify intial comments author
                 recipients = recipients + "," + comment_relation.author + "@mskcc.org"
                 recipients = recipients.split(",")
-                send_notification(
+                notify.send_notification(
                     set(recipients),
                     payload["comment"],
                     payload["request_id"],
@@ -151,7 +151,7 @@ def add_to_all_and_notify():
             if recipients:
                 if user.role == "lab_member":
                     recipients = recipients.split(",")
-                    send_notification(
+                    notify.send_notification(
                         set(recipients),
                         payload["comment"],
                         payload["request_id"],
@@ -164,7 +164,7 @@ def add_to_all_and_notify():
                         recipients + "," + comment_relation.author + "@mskcc.org"
                     )
                     recipients = recipients.split(",")
-                    send_notification(
+                    notify.send_notification(
                         set(recipients),
                         payload["comment"],
                         payload["request_id"],
@@ -332,68 +332,3 @@ def save_comment(comment, report, request_id, user, comment_relation):
         return None
 
     return
-
-
-def send_initial_notification(recipients, request_id, report, author):
-    receiver_email = (
-        "wagnerl@mskcc.org,patrunoa@mskcc.org," + author.username + "@mskcc.org"
-    )
-    # receiver_email = recipients
-    sender_email = NOTIFICATION_SENDER
-    # print(receiver_email.split(","))
-
-    template = constants.initial_email_template_html
-    name = author.full_name
-    content = template["body"] % (report.split(' ')[0], request_id) + template[
-        "footer"
-    ] % (name, author.title)
-    msg = MIMEText(content, "html")
-    msg['Subject'] = template["subject"] % request_id
-
-    msg['From'] = sender_email
-    msg['To'] = receiver_email
-
-    # Send the message via our own SMTP server.
-    s = smtplib.SMTP('localhost')
-    # .sendmail(sender_email, receiver_email, message.as_string())
-    # if ENV = development
-    s.sendmail(sender_email, receiver_email.split(","), msg.as_string())
-    s.close()
-    print(msg.as_string())
-    return "done"
-
-
-def send_notification(recipients, comment, request_id, report, author):
-    receiver_email = (
-        "wagnerl@mskcc.org,patrunoa@mskcc.org," + author.username + "@mskcc.org"
-    )
-    # receiver_email = recipients
-    sender_email = NOTIFICATION_SENDER
-    # print(receiver_email.split(","))
-
-    template = constants.notification_email_template_html
-
-    print(recipients)
-    name = author.full_name
-
-    content = (
-        template["body"] % (report.split(' ')[0], request_id, comment["content"])
-        + template["footer"] % (name, author.title)
-        + "<br><br>In production, this email would have been sent to:"
-        + ", ".join(recipients)
-    )
-    msg = MIMEText(content, "html")
-    msg['Subject'] = template["subject"] % request_id
-
-    msg['From'] = sender_email
-    msg['To'] = receiver_email
-    # # msg['Cc'] = "patrunoa@mskcc.org"
-
-    # # # Send the message via our own SMTP server.
-    s = smtplib.SMTP('localhost')
-    # .sendmail(sender_email, receiver_email, message.as_string())
-    # if ENV = development
-    s.sendmail(sender_email, receiver_email.split(","), msg.as_string())
-    s.close()
-    print(msg.as_string())
-    return "done"
