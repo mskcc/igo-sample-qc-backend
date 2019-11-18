@@ -194,47 +194,55 @@ def get_qc_report_samples():
 
             sharedColumns = constants.sharedColumns
             # check if at least one investigator decision still has to be made
-            read_only = is_investigator_decision_read_only(lims_data)
 
-            sharedColumns["InvestigatorDecision"]["readOnly"] = read_only
+            # read_only = False
+            # sharedColumns["InvestigatorDecision"]["readOnly"] = read_only
 
             for field in lims_data:
 
                 if field == "dnaReportSamples":
+
                     if is_lab_member or (
                         is_authorized_for_request and "DNA Report" in reports
                     ):
-                        columnFeatures = mergeColumns(
-                            sharedColumns, constants.dnaColumns
-                        )
+                        read_only = is_investigator_decision_read_only(lims_data[field])
+                        dnaColumns = constants.dnaColumns
+                        dnaColumns["InvestigatorDecision"]["readOnly"] = read_only
+                        columnFeatures = mergeColumns(sharedColumns, dnaColumns)
                         tables[field] = build_table(
                             field, lims_data[field], columnFeatures, constants.dnaOrder
                         )
+                        tables[field]["readOnly"] = read_only
 
                 if field == "rnaReportSamples":
+
                     if is_lab_member or (
                         is_authorized_for_request and "RNA Report" in reports
                     ):
-                        columnFeatures = mergeColumns(
-                            sharedColumns, constants.rnaColumns
-                        )
+                        read_only = is_investigator_decision_read_only(lims_data[field])
+                        rnaColumns = constants.rnaColumns
+                        rnaColumns["InvestigatorDecision"]["readOnly"] = read_only
+                        columnFeatures = mergeColumns(sharedColumns, rnaColumns)
                         tables[field] = build_table(
                             field, lims_data[field], columnFeatures, constants.rnaOrder
                         )
+                        tables[field]["readOnly"] = read_only
 
                 if field == "libraryReportSamples":
                     if is_lab_member or (
                         is_authorized_for_request and "Library Report" in reports
                     ):
-                        columnFeatures = mergeColumns(
-                            sharedColumns, constants.libraryColumns
-                        )
+                        read_only = is_investigator_decision_read_only(lims_data[field])
+                        libraryColumns = constants.libraryColumns
+                        libraryColumns["InvestigatorDecision"]["readOnly"] = read_only
+                        columnFeatures = mergeColumns(sharedColumns, libraryColumns)
                         tables[field] = build_table(
                             field,
                             lims_data[field],
                             columnFeatures,
                             constants.libraryOrder,
                         )
+                        tables[field]["readOnly"] = read_only
 
                 if field == "pathologyReportSamples":
                     if is_lab_member or (
@@ -256,6 +264,7 @@ def get_qc_report_samples():
                         columnFeatures,
                         constants.attachmentOrder,
                     )
+            print(tables)
 
             responseObject = {'tables': tables, 'read_only': read_only}
             # print(responseObject)
@@ -541,9 +550,6 @@ def build_pending_list(pendings):
             % (pending.request_id, "material-icons", "forward")
         )
         # print('get comment authors user role')
-        
-        
-
 
         comments = pending.children
         for comment in comments:
@@ -553,7 +559,6 @@ def build_pending_list(pendings):
                 responsePending["pm_notifications"] += 1
             if comment.author.role == "user":
                 responsePending["user_replies"] += 1
-
 
         responsePendings.append(responsePending)
 
@@ -570,7 +575,6 @@ def build_pending_list(pendings):
             {"data": "user_replies", "readOnly": "true"},
             {"data": "recipients", "readOnly": "true", "renderer": "html"},
             {"data": "show", "readOnly": "true", "renderer": "html"},
-            
         ],
         "columnHeaders": constants.pending_order,
     }
@@ -656,12 +660,11 @@ def save_decision(decisions, request_id, username):
 
 
 # iterate over lims returned investigator decisions, set column to be editable if at least one decision is unfilled
-def is_investigator_decision_read_only(lims_data):
-    for field in lims_data:
-        if "dna" in field or "rna" in field or "library" in field:
-            for sample in lims_data[field]:
-                if not sample["investigatorDecision"]:
-                    return False
+def is_investigator_decision_read_only(data):
+    for field in data:
+        if not field["investigatorDecision"] and field["hideFromSampleQC"] != True:
+            print(field)
+            return False
     return True
 
 

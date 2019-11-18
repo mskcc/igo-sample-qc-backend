@@ -50,17 +50,7 @@ sharedColumns = {
         "readOnly": "true",
         "renderer": "html",
     },
-    "InvestigatorDecision": {
-        "limsField": "InvestigatorDecision",
-        "data": "investigatorDecision",
-        "columnHeader": "Investigator Decision",
-        "readOnly": "true",
-        "type": "autocomplete",
-        "strict": "true",
-        "allowInvalid": "false",
-        "trimDropdown": "false",
-        "picklistName": "InvestigatorDecisionCustomers",
-    },
+    
     "Comments": {
         "limsField": "Comments",
         "data": "comments",
@@ -118,6 +108,17 @@ dnaColumns = {
         "columnHeader": "CMO Sample Type",
         "readOnly": "true",
     },
+    "InvestigatorDecision": {
+        "limsField": "InvestigatorDecision",
+        "data": "investigatorDecision",
+        "columnHeader": "Investigator Decision",
+        "readOnly": "true",
+        "type": "autocomplete",
+        "strict": "true",
+        "allowInvalid": "false",
+        "trimDropdown": "false",
+        "picklistName": "InvestigatorDecisionCustomers",
+    },
 }
 
 rnaColumns = {
@@ -139,6 +140,17 @@ rnaColumns = {
         "columnHeader": "DV200",
         "readOnly": "true",
     },
+    "InvestigatorDecision": {
+        "limsField": "InvestigatorDecision",
+        "data": "investigatorDecision",
+        "columnHeader": "Investigator Decision",
+        "readOnly": "true",
+        "type": "autocomplete",
+        "strict": "true",
+        "allowInvalid": "false",
+        "trimDropdown": "false",
+        "picklistName": "InvestigatorDecisionCustomers",
+    },
 }
 
 libraryColumns = {
@@ -153,6 +165,17 @@ libraryColumns = {
         "data": "tumorOrNormal",
         "columnHeader": "Tumor/Normal",
         "readOnly": "true",
+    },
+    "InvestigatorDecision": {
+        "limsField": "InvestigatorDecision",
+        "data": "investigatorDecision",
+        "columnHeader": "Investigator Decision",
+        "readOnly": "true",
+        "type": "autocomplete",
+        "strict": "true",
+        "allowInvalid": "false",
+        "trimDropdown": "false",
+        "picklistName": "InvestigatorDecisionCustomers",
     },
 }
 pathologyColumns = {
