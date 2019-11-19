@@ -10,10 +10,9 @@ class Decision(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     request_id = db.Column(db.String(40), nullable=False)
     decision_maker = db.Column(db.String(40), db.ForeignKey('users.username'))
+    comment_relation_id = db.Column(db.Integer, db.ForeignKey('commentrelations.id'))
     decisions = db.Column(db.Text(), nullable=False)
-    date_created = db.Column(db.DateTime, nullable=False)
     date_updated = db.Column(db.DateTime, nullable=True)
-    
 
     def __init__(
         self,

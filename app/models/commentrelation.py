@@ -18,6 +18,7 @@ class CommentRelation(db.Model):
     date_created = db.Column(db.DateTime, nullable=False)
     date_updated = db.Column(db.DateTime, nullable=True)
     children = relationship("Comment", order_by="Comment.date_created")
+    decision = relationship("Decision")
 
     def __init__(
         self,

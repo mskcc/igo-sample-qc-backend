@@ -33,6 +33,7 @@ import sys
 import re
 import copy
 import traceback
+from sqlalchemy import tuple_
 
 from app import app, constants, db, notify
 from app.logger import log_info, log_error, log_lims
@@ -264,7 +265,6 @@ def get_qc_report_samples():
                         columnFeatures,
                         constants.attachmentOrder,
                     )
-            print(tables)
 
             responseObject = {'tables': tables, 'read_only': read_only}
             # print(responseObject)
@@ -290,17 +290,20 @@ def set_qc_investigator_decision():
     username = payload["username"]
     decisions = payload["decisions"]
     request_id = payload["request_id"]
+    report = payload["report"]
     try:
         decision_user = User.query.filter_by(username=username).first()
 
         decision_to_save = Decision(
             decisions=json.dumps(decisions),
             request_id=request_id,
+            report=report,
             date_created=datetime.now(),
             date_updated=datetime.now(),
         )
 
         decision_user.decisions.append(decision_to_save)
+        comment_relation.decision.append(decision_to_save)
 
         r = s.post(
             LIMS_API_ROOT + "/setInvestigatorDecision",
@@ -341,9 +344,8 @@ def get_pending():
     # get request ids from commentrelation where not in request id from decisions
 
     try:
-        query = db.session.query(CommentRelation)
-        subquery = db.session.query(Decision.request_id)
-        pendings = query.filter(~CommentRelation.request_id.in_(subquery))
+        pendings = db.session.query(CommentRelation).filter(CommentRelation.decision == None)
+        
         return build_pending_list(pendings)
 
     except:
@@ -636,34 +638,35 @@ def is_user_authorized_for_request(request_id, username):
     return False
 
 
-def save_decision(decisions, request_id, username):
-    try:
-        user = User.query.filter_by(username=username).first()
+# def save_decision(decisions, request_id, username):
+#     try:
+#         user = User.query.filter_by(username=username).first()
 
-        decision_to_save = Decision(
-            decisions=json.dumps(decisions),
-            request_id=request_id,
-            date_created=datetime.now(),
-            date_updated=datetime.now(),
-        )
+#         decision_to_save = Decision(
+#             decisions=json.dumps(decisions),
+#             request_id=request_id,
+#             report=report,
+#             date_created=datetime.now(),
+#             date_updated=datetime.now(),
+#         )
 
-        user.decisions.append(decision_to_save)
+#         user.decisions.append(decision_to_save)
+#         comment_relation.decisions.append(decision_to_save)
 
-        db.session.commit()
-        return decision_to_save
-    except:
-        print(traceback.print_exc())
+#         db.session.commit()
+#         return decision_to_save
+#     except:
+#         print(traceback.print_exc())
 
-        return None
+#         return None
 
-    return None
+#     return None
 
 
 # iterate over lims returned investigator decisions, set column to be editable if at least one decision is unfilled
 def is_investigator_decision_read_only(data):
     for field in data:
         if not field["investigatorDecision"] and field["hideFromSampleQC"] != True:
-            print(field)
             return False
     return True
 
