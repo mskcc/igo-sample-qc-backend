@@ -23,8 +23,6 @@ from tempfile import NamedTemporaryFile
 import pandas as pd
 from io import BytesIO
 import smtplib
-from email.mime.text import MIMEText
-from email.message import EmailMessage
 from datetime import datetime
 
 from openpyxl.writer.excel import save_virtual_workbook

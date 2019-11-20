@@ -95,12 +95,27 @@ def send_notification(recipients, comment, request_id, report, author):
 
     msg['From'] = sender_email
     msg['To'] = receiver_email
-    # # msg['Cc'] = "patrunoa@mskcc.org"
 
     # # # Send the message via our own SMTP server.
     s = smtplib.SMTP('localhost')
     # .sendmail(sender_email, receiver_email, message.as_string())
     # if ENV = development
+    s.sendmail(sender_email, receiver_email.split(","), msg.as_string())
+    s.close()
+    print(msg.as_string())
+    return "done"
+
+
+def send_feedback(recipients, body, subject, type):
+    receiver_email = recipients
+    sender_email = NOTIFICATION_SENDER
+
+    msg = MIMEText(body)
+    msg['Subject'] = "New Feedback for Sample QC! " + type + " " + subject
+
+    msg['From'] = sender_email
+    msg['To'] = receiver_email
+    s = smtplib.SMTP('localhost')
     s.sendmail(sender_email, receiver_email.split(","), msg.as_string())
     s.close()
     print(msg.as_string())

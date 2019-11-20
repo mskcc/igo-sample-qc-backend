@@ -10,8 +10,10 @@ from flask_jwt_extended import (
 )
 from flask_login import login_user, logout_user, current_user
 
+import traceback
 
-from app import app, db, jwt
+
+from app import app, db, jwt, notify
 from app.logger import log_info, log_error
 from app.models import User, BlacklistToken
 
@@ -24,6 +26,7 @@ import ldap
 
 AUTHORIZED_USER_GROUP = app.config["AUTHORIZED_USER_GROUP"]
 LAB_MEMBER_GROUP = app.config["LAB_MEMBER_GROUP"]
+FEEDBACK_RECIPIENT = app.config["FEEDBACK_RECIPIENT"]
 
 
 # initializes user blueprint as an extension of the application
@@ -112,7 +115,6 @@ def login():
                 'full_name': user.full_name,
                 'role': user.role,
             }
-            
 
             return make_response(jsonify(responseObject), 200, None)
         else:
@@ -174,6 +176,25 @@ def logoutRefresh():
     except Exception as e:
         responseObject = {'status': 'fail', 'message': e}
         return make_response(jsonify(responseObject)), 200
+
+
+@user.route('/submitFeedback', methods=['POST'])
+@jwt_required
+def submit_feedback():
+
+    payload = request.get_json()['data']
+    print(payload)
+    try:
+        notify.send_feedback(
+            FEEDBACK_RECIPIENT,
+            payload["feedbackBody"],
+            payload["feedbackSubject"],
+            payload["feedbackType"],
+        )
+        return make_response("Success", 200)
+    except:
+        print(traceback.print_exc())
+    return make_response("Error", 500)
 
 
 # goes to User model/table and grabs everything in it
