@@ -364,7 +364,8 @@ def download_attachment():
         params={"recordId": record_id},
         verify=False,
     )
-
+    if not os.path.exists(TMP_FOLDER):
+        os.makedirs(TMP_FOLDER)
     if tmp_file_exists(file_name):
         log_info("Returning tmp file " + file_name)
         return send_from_directory(TMP_FOLDER, file_name, as_attachment=True)
@@ -745,9 +746,10 @@ def after_request(response):
                 + str(get_jwt_identity())
                 + "\n"
             )
-    if hasattr(current_user, 'username'):
-        username = current_user.username
-    else:
-        username = "anonymous"
-    log_info(response_message, username)
+    # if hasattr(current_user, 'username'):
+    #     username = current_user.username
+    # else:
+    #     username = "anonymous"
+
+    log_info(response_message, 'username')
     return response
