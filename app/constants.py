@@ -298,6 +298,14 @@ pending_order = [
     "Show",
 ]
 
+user_pending_order = [
+    "Request",
+    "First notification",
+    "Most recent notification",
+    "Report",
+    "Show",
+]
+
 initial_email_template = {
     "from": "igoski@mskcc.org",
     "subject": "%s QC results pending further action",

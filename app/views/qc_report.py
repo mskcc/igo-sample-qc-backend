@@ -31,7 +31,7 @@ import sys
 import re
 import copy
 import traceback
-from sqlalchemy import tuple_
+from sqlalchemy import or_
 
 from app import app, constants, db, notify
 from app.logger import log_info, log_error, log_lims
@@ -295,7 +295,6 @@ def set_qc_investigator_decision():
         decision_to_save = Decision(
             decisions=json.dumps(decisions),
             request_id=request_id,
-            report=report,
             date_created=datetime.now(),
             date_updated=datetime.now(),
         )
@@ -340,11 +339,36 @@ def set_qc_investigator_decision():
 @qc_report.route("/getPending", methods=["GET"])
 def get_pending():
     # get request ids from commentrelation where not in request id from decisions
-
     try:
-        pendings = db.session.query(CommentRelation).filter(CommentRelation.decision == None)
-        
+        pendings = db.session.query(CommentRelation).filter(
+            CommentRelation.decision == None
+        )
         return build_pending_list(pendings)
+
+    except:
+        print(traceback.print_exc())
+
+        return None
+
+
+# return pending user is associated with
+@qc_report.route("/getUserPending", methods=["GET"])
+@jwt_required
+def get_user_pending():
+    user = load_user(get_jwt_identity())
+    # get request ids from commentrelation where not in request id from decisions
+    try:
+        pendings = (
+            db.session.query(CommentRelation)
+            .filter(CommentRelation.decision == None)
+            .filter(
+                or_(
+                    CommentRelation.author == user.username,
+                    CommentRelation.recipients.like("%" + user.username + "%"),
+                )
+            )
+        )
+        return build_user_pending_list(pendings)
 
     except:
         print(traceback.print_exc())
@@ -357,7 +381,6 @@ def download_attachment():
 
     record_id = request.args.get("recordId")
     file_name = request.args.get("fileName")
-
     r = s.get(
         LIMS_API_ROOT + "/getAttachmentFile",
         auth=(LIMS_USER, LIMS_PW),
@@ -578,6 +601,38 @@ def build_pending_list(pendings):
             {"data": "show", "readOnly": "true", "renderer": "html"},
         ],
         "columnHeaders": constants.pending_order,
+    }
+
+
+def build_user_pending_list(pendings):
+
+    responsePendings = []
+
+    for pending in pendings:
+        responsePending = {}
+        responsePending["request_id"] = pending.request_id
+        responsePending["date"] = pending.date_created
+        responsePending["most_recent_date"] = pending.children[-1].date_created
+        # print(pending.children[-1].date_created, pending.request_id)
+        responsePending["report"] = pending.report
+
+        responsePending["show"] = (
+            "<span pending-id='%s' class ='show-icon'><i class=%s>%s</i></span>"
+            % (pending.request_id, "material-icons", "forward")
+        )
+
+        responsePendings.append(responsePending)
+
+    return {
+        "data": responsePendings,
+        "columnFeatures": [
+            {"data": "request_id", "readOnly": "true"},
+            {"data": "date", "readOnly": "true"},
+            {"data": "most_recent_date", "readOnly": "true"},
+            {"data": "report", "readOnly": "true"},
+            {"data": "show", "readOnly": "true", "renderer": "html"},
+        ],
+        "columnHeaders": constants.user_pending_order,
     }
 
 

@@ -5,6 +5,12 @@ from sqlalchemy import update, text
 
 import traceback
 
+from app.logger import log_info, log_error
+from flask_jwt_extended import (
+    jwt_required,
+    jwt_refresh_token_required,
+    get_jwt_identity,
+)
 
 import smtplib
 from email.mime.text import MIMEText
@@ -93,24 +99,24 @@ def add_and_notify():
         if recipients:
             if user.role == "lab_member":
                 recipients = recipients.split(",")
-                notify.send_notification(
-                    set(recipients),
-                    payload["comment"],
-                    payload["request_id"],
-                    payload["report"],
-                    user,
-                )
+                # notify.send_notification(
+                #     set(recipients),
+                #     payload["comment"],
+                #     payload["request_id"],
+                #     payload["report"],
+                #     user,
+                # )
             else:
                 # if a non-lab member comments, notify intial comments author
                 recipients = recipients + "," + comment_relation.author + "@mskcc.org"
                 recipients = recipients.split(",")
-                notify.send_notification(
-                    set(recipients),
-                    payload["comment"],
-                    payload["request_id"],
-                    payload["report"],
-                    user,
-                )
+                # notify.send_notification(
+                #     set(recipients),
+                #     payload["comment"],
+                #     payload["request_id"],
+                #     payload["report"],
+                #     user,
+                # )
 
     except:
         print(traceback.print_exc())
@@ -332,3 +338,84 @@ def save_comment(comment, report, request_id, user, comment_relation):
         return None
 
     return
+
+
+@app.after_request
+def after_request(response):
+
+    # response.headers.add("Access-Control-Allow-Origin", "*")
+    response.headers.add("Access-Control-Allow-Headers", "Content-Type,Authorization")
+    response.headers.add("Access-Control-Allow-Methods", "GET,PUT,POST,DELETE")
+    request_args = {key + ":" + request.args[key] for key in request.args}
+
+    if response.is_streamed == True:
+        response_message = (
+            "\n---Flask Request---\n"
+            + "\n".join(request_args)
+            + "\n"
+            + "Streamed Data"
+            + "\n"
+        )
+
+    # elif request.path == "/addAndNotify" or request.path == "/addAndNotifyInitial":
+    #     return response
+
+    elif (
+        request.path
+        == "/getAttachmentFile"
+        # or request.path == "/storeReceipt"
+        # or request.path == "/getReceipt"
+        # or request.path == "/exportExcel"
+    ):
+        response_message = (
+            "Args: "
+            + "\n".join(request_args)
+            + "Data: File Data"
+            + "\n"
+            + "User: "
+            + str(get_jwt_identity())
+            + "\n"
+        )
+    # if "/columnDefinition" in request.path or "/initialState" in request.path:
+    #     response_message = (
+    #         'Args: '
+    #         + "\n".join(request_args)
+    #         + "\n"
+    #         + "User: "
+    #         + str(get_jwt_identity())
+    #         + "\n"
+    #     )
+    else:
+        if len(response.data) > 500:
+
+            response_message = (
+                'Args: '
+                + "\n".join(request_args)
+                + "\n"
+                + "Data: "
+                + str(response.data[:500])
+                + "[...]"
+                + "\n"
+                + "User: "
+                + str(get_jwt_identity())
+                + "\n"
+            )
+        else:
+            response_message = (
+                'Args: '
+                + "\n".join(request_args)
+                + "\n"
+                + "Data: "
+                + str(response.data)
+                + "\n"
+                + "User: "
+                + str(get_jwt_identity())
+                + "\n"
+            )
+    # if hasattr(current_user, 'username'):
+    #     username = current_user.username
+    # else:
+    #     username = "anonymous"
+
+    log_info(response_message, 'username')
+    return response
