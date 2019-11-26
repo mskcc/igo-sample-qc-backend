@@ -1,6 +1,6 @@
 from flask import Flask, Blueprint, json, jsonify, request, make_response
 from app import app, db, constants, notify
-from app.models import Comment, CommentRelation, User
+from app.models import Comment, CommentRelation, User, Decision
 from sqlalchemy import update, text
 
 import traceback
@@ -48,16 +48,18 @@ def add_and_notify_initial():
                 report,
                 payload["recipients"],
                 payload["request_id"],
+                payload["decisions_made"],
+                # add decisionsmade object
                 user,
             )
-            if recipients:
+            # if recipients:
 
-                notify.send_initial_notification(
-                    recipients, payload["request_id"], report, user
-                )
-            else:
-                responseObject = {'message': "Failed to save comment"}
-                return make_response(jsonify(responseObject), 400, None)
+            #     notify.send_initial_notification(
+            #         recipients, payload["request_id"], report, user
+            #     )
+            # else:
+            #     responseObject = {'message': "Failed to save comment"}
+            #     return make_response(jsonify(responseObject), 400, None)
 
     except:
         traceback.print_exc()
@@ -281,7 +283,9 @@ def load_comments_for_request(request_id):
 
 
 #  saves initial new comment and relation and returns recipients to send notification to
-def save_initial_comment_and_relation(comment, report, recipients, request_id, user):
+def save_initial_comment_and_relation(
+    comment, report, recipients, request_id, decisions_made, user
+):
     comment_relation = (
         CommentRelation.query.filter(CommentRelation.request_id == request_id)
         .filter(CommentRelation.report == report)
@@ -310,6 +314,22 @@ def save_initial_comment_and_relation(comment, report, recipients, request_id, u
         user.comments.append(comment)
         user.commentrelations.append(comment_relation)
         comment_relation.children.append(comment)
+
+        # an inital comment was submitted for a report where all decisions have been made in the LIMS already
+        if report in decisions_made:
+            # create new decision
+            decision = Decision(
+                decisions=json.dumps(decisions_made[report]),
+                request_id=request_id,
+                is_igo_decision=True,
+                date_created=datetime.now(),
+                date_updated=datetime.now(),
+            )
+            user.decisions.append(decision)    
+            comment_relation.decision.append(decision)
+
+        
+
         db.session.commit()
     except:
         print(traceback.print_exc())
