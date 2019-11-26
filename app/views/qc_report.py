@@ -392,7 +392,6 @@ def get_user_pending():
 
 @qc_report.route("/downloadAttachment", methods=["GET"])
 def download_attachment():
-
     record_id = request.args.get("recordId")
     file_name = request.args.get("fileName")
     r = s.get(
@@ -446,6 +445,12 @@ def build_table(reportTable, samples, columnFeatures, order):
 
                     if orderedColumn == "Concentration":
                         responseHeaders.append(
+                            columnFeatures[orderedColumn]["columnHeader"]
+                            + ' ('
+                            + samples[0]['concentrationUnits']
+                            + ')'
+                        )
+                        columnFeatures[orderedColumn]["columnHeader"] = (
                             columnFeatures[orderedColumn]["columnHeader"]
                             + ' ('
                             + samples[0]['concentrationUnits']
@@ -515,8 +520,6 @@ def build_table(reportTable, samples, columnFeatures, order):
                                 )
 
                         elif orderedColumn == "Action":
-                            print(dataFieldName, 'firstsample')
-                            print(responseSample, 'firstsample')
                             responseSample[dataFieldName] = (
                                 "<div class ='download-icon'><i class=%s>%s</i></div>"
                                 % ("material-icons", "cloud_download")
