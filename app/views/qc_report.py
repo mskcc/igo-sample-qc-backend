@@ -31,7 +31,7 @@ import sys
 import re
 import copy
 import traceback
-from sqlalchemy import or_
+from sqlalchemy import or_, and_
 
 from app import app, constants, db, notify
 from app.logger import log_info, log_error, log_lims
@@ -274,11 +274,11 @@ def get_qc_report_samples():
             return response
     except:
         print(traceback.print_exc())
-        response = make_response(
-            "The backend is experiencing some issues, please try again later or contact an admin.",
-            500,
-            None,
-        )
+        responseObject = {
+            'message': "The backend is experiencing some issues, please try again later or contact an admin."
+        }
+
+        return make_response(jsonify(responseObject), 500, None)
 
 
 @qc_report.route("/setQCInvestigatorDecision", methods=["POST"])
@@ -291,6 +291,12 @@ def set_qc_investigator_decision():
     report = payload["report"]
     try:
         decision_user = User.query.filter_by(username=username).first()
+        comment_relation = CommentRelation.query.filter(
+            and_(
+                CommentRelation.request_id == request_id,
+                CommentRelation.report == report,
+            )
+        ).first()
 
         decision_to_save = Decision(
             decisions=json.dumps(decisions),
@@ -300,7 +306,14 @@ def set_qc_investigator_decision():
         )
 
         decision_user.decisions.append(decision_to_save)
-        comment_relation.decision.append(decision_to_save)
+        if comment_relation:
+            comment_relation.decision.append(decision_to_save)
+        else:
+            responseObject = {
+                'message': "Can only decide on reports with initial comment."
+            }
+
+            return make_response(jsonify(responseObject), 500, None)
 
         r = s.post(
             LIMS_API_ROOT + "/setInvestigatorDecision",
@@ -308,20 +321,21 @@ def set_qc_investigator_decision():
             verify=False,
             data=json.dumps(payload["decisions"]),
         )
-        log_info(json.dumps(payload["decisions"]), username)
+        # log_info(json.dumps(payload["decisions"]), username)
 
-        commentrelations = CommentRelation.query.filter_by(
-            request_id=payload["request_id"]
-        )
-        recipients = ""
-        for commentrelation in commentrelations:
-            if recipients == "":
-                recipients = commentrelation.recipients
-            else:
-                recipients = recipients + "," + commentrelation.recipients
+        # # decisions are made by report but everyone should be informed?
+        # commentrelations = CommentRelation.query.filter_by(
+        #     request_id=payload["request_id"]
+        # )
+        # recipients = ""
+        # for commentrelation in commentrelations:
+        #     if recipients == "":
+        #         recipients = commentrelation.recipients
+        #     else:
+        #         recipients = recipients + "," + commentrelation.recipients
 
         notify.send_decision_notification(
-            decision_to_save, decision_user, set(recipients.split(","))
+            decision_to_save, decision_user, set(comment_relation.recipients.split(","))
         )
 
         db.session.commit()
