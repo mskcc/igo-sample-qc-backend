@@ -8,7 +8,13 @@ from flask_jwt_extended import (
     create_refresh_token,
     get_jwt_identity,
 )
-from app import app, db, jwt
+from flask_login import login_user, logout_user, current_user
+
+import traceback
+
+
+from app import app, db, jwt, notify
+from app.logger import log_info, log_error
 from app.models import User, BlacklistToken
 
 # from sqlalchemy import update
@@ -20,6 +26,7 @@ import ldap
 
 AUTHORIZED_USER_GROUP = app.config["AUTHORIZED_USER_GROUP"]
 LAB_MEMBER_GROUP = app.config["LAB_MEMBER_GROUP"]
+FEEDBACK_RECIPIENT = app.config["FEEDBACK_RECIPIENT"]
 
 
 # initializes user blueprint as an extension of the application
@@ -74,17 +81,21 @@ def login():
         if authorized_user or lab_member:
             full_name = get_user_fullname(result)
             title = get_user_title(result)
-            
+
             if lab_member:
-                print('lab member user loaded: ' + username)
+                log_info('lab_member user logged in: ' + username)
                 user = load_username(username, title, full_name, "lab_member")
+
             else:
-                print('authorized user loaded: ' + username)
+                log_info('non_lab_member user logged in: ' + username)
                 user = load_username(username, title, full_name, "user")
+
+            login_user(user)
 
             # Create our JWTs
             # default expiration 15 minutes
-            access_token = create_access_token(identity=username)
+            expires = datetime.timedelta(hours=12)
+            access_token = create_access_token(identity=username, expires_delta=expires)
 
             # default expiration 30 days, changed to 12 hours
             expires = datetime.timedelta(hours=12)
@@ -104,6 +115,7 @@ def login():
                 'full_name': user.full_name,
                 'role': user.role,
             }
+
             return make_response(jsonify(responseObject), 200, None)
         else:
             # log_error(
@@ -129,6 +141,8 @@ def login():
 @user.route('/logoutAccess')
 @jwt_required
 def logoutAccess():
+    log_info('user logged out: ' + get_jwt_identity())
+    logout_user()
     jti = get_raw_jwt()['jti']
     try:
         revoked_token = BlacklistToken(jti=jti)
@@ -147,6 +161,8 @@ def logoutAccess():
 @user.route('/logoutRefresh', methods=['GET'])
 @jwt_refresh_token_required
 def logoutRefresh():
+    log_info('user logged out: ' + get_jwt_identity())
+    logout_user()
     jti = get_raw_jwt()['jti']
     try:
         revoked_token = BlacklistToken(jti=jti)
@@ -160,6 +176,25 @@ def logoutRefresh():
     except Exception as e:
         responseObject = {'status': 'fail', 'message': e}
         return make_response(jsonify(responseObject)), 200
+
+
+@user.route('/submitFeedback', methods=['POST'])
+@jwt_required
+def submit_feedback():
+
+    payload = request.get_json()['data']
+    print(payload)
+    try:
+        notify.send_feedback(
+            FEEDBACK_RECIPIENT,
+            payload["feedbackBody"],
+            payload["feedbackSubject"],
+            payload["feedbackType"],
+        )
+        return make_response("Success", 200)
+    except:
+        print(traceback.print_exc())
+    return make_response("Error", 500)
 
 
 # goes to User model/table and grabs everything in it
@@ -206,6 +241,7 @@ def get_user_title(result):
     title = re.sub(r'title\': \[b\'', "", p[0])
     title = re.sub(r'\']\,', "", title)
     return title
+
 
 def get_user_fullname(result):
     p = re.search("displayName(.*?)\]\,", str(result))

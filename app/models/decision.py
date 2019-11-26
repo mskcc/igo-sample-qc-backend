@@ -1,37 +1,33 @@
 import datetime
 from app import db
-from sqlalchemy.orm import relationship
-from sqlalchemy.ext.declarative import declarative_base
 
-Base = declarative_base()
 
-# Model to define a comment's recipients and report
-class CommentRelation(db.Model):
+# Model to define decisions
+class Decision(db.Model):
 
-    __tablename__ = "commentrelations"
+    __tablename__ = "decisions"
 
     id = db.Column(db.Integer, primary_key=True)
     request_id = db.Column(db.String(40), nullable=False)
-    report = db.Column(db.Text(), nullable=False)
-    author = db.Column(db.String(40), db.ForeignKey('users.username'))
-    recipients = db.Column(db.Text(), nullable=False)
-    date_created = db.Column(db.DateTime, nullable=False)
+    decision_maker = db.Column(db.String(40), db.ForeignKey('users.username'))
+    comment_relation_id = db.Column(db.Integer, db.ForeignKey('commentrelations.id'))
+    decisions = db.Column(db.Text(), nullable=False)
+    is_igo_decision = db.Column(db.Boolean(), nullable=False)
+    date_created = db.Column(db.DateTime, nullable=True)
     date_updated = db.Column(db.DateTime, nullable=True)
-    children = relationship("Comment", order_by="Comment.date_created")
-    decision = relationship("Decision")
 
     def __init__(
         self,
         request_id,
-        report,
-        recipients,
+        decisions,
         date_updated,
+        is_igo_decision=False,
         date_created=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
     ):
 
         self.request_id = request_id
-        self.report = report
-        self.recipients = recipients
+        self.decisions = decisions
+        self.is_igo_decision = is_igo_decision
         self.date_created = date_created
         self.date_updated = date_updated
 
@@ -41,8 +37,8 @@ class CommentRelation(db.Model):
         return {
             "id": self.id,
             "request_id": self.request_id,
-            "report": self.report,
-            "recipients": self.recipients,
+            "decisions": self.decisions,
+            "is_igo_decision": self.is_igo_decision,
             "date_created": self.date_created.strftime("%Y-%m-%d %H:%M:%S"),
             "date_updated": self.date_updated.strftime("%Y-%m-%d %H:%M:%S"),
         }

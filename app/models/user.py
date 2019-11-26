@@ -1,5 +1,6 @@
 import datetime
 from app import db
+
 # from flask_sqlalchemy import event
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
@@ -45,7 +46,9 @@ class User(db.Model):
     username = db.Column(db.String(40), nullable=False, unique=True)
     title = db.Column(db.String(40), nullable=True)
     role = db.Column(db.String(40), nullable=True)
-    children = relationship("Comment")
+    comments = relationship("Comment")
+    decisions = relationship("Decision")
+    commentrelations = relationship("CommentRelation")
 
     def __init__(self, username, full_name=None, title=None, role='user'):
 
@@ -89,6 +92,33 @@ class User(db.Model):
 
         conn.unbind_s()
         return result
+
+    @property
+    def is_authenticated(self):
+        return True
+
+    @property
+    def is_anonymous(self):
+        return False
+
+    @property
+    def is_active(self):
+        return True
+
+    def get_id(self):
+        return str(self.id)
+
+    def get_username(self):
+        return str(self.username)
+
+    def get_full_name(self):
+        return str(self.full_name)
+
+    def get_title(self):
+        return str(self.title)
+
+    def get_role(self):
+        return str(self.role)
 
 
 # def insert_initial_values(*args, **kwargs):

@@ -1,6 +1,8 @@
 import datetime
 from app import db
-# import User
+from sqlalchemy.orm import relationship
+from sqlalchemy.ext.declarative import declarative_base
+
 
 
 
@@ -19,6 +21,8 @@ class Comment(db.Model):
     comment = db.Column(db.Text(), nullable=False)
     date_created = db.Column(db.DateTime, nullable=False)
     date_updated = db.Column(db.DateTime, nullable=True)
+    author = relationship("User")
+
 
     def __init__(
         self,
