@@ -52,14 +52,14 @@ def add_and_notify_initial():
                 # add decisionsmade object
                 user,
             )
-            # if recipients:
+            if recipients:
 
-            #     notify.send_initial_notification(
-            #         recipients, payload["request_id"], report, user
-            #     )
-            # else:
-            #     responseObject = {'message': "Failed to save comment"}
-            #     return make_response(jsonify(responseObject), 400, None)
+                notify.send_initial_notification(
+                    recipients, payload["request_id"], report, user
+                )
+            else:
+                responseObject = {'message': "Failed to save comment"}
+                return make_response(jsonify(responseObject), 400, None)
 
     except:
         traceback.print_exc()
