@@ -157,7 +157,7 @@ libraryColumns = {
     "AvgSize": {
         "limsField": "AvgSize",
         "data": "avgSize",
-        "columnHeader": "Average Size",
+        "columnHeader": "Average Size (bp)",
         "readOnly": "true",
     },
     "TumorOrNormal": {

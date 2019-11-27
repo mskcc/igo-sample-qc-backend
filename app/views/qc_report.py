@@ -45,8 +45,7 @@ LIMS_API_ROOT = app.config["LIMS_API_ROOT"]
 LIMS_USER = app.config["LIMS_USER"]
 LIMS_PW = app.config["LIMS_PW"]
 TMP_FOLDER = app.config["TMP_FOLDER"]
-NOTIFICATION_SENDER = app.config["NOTIFICATION_SENDER"]
-IGO_EMAIL = app.config["IGO_EMAIL"]
+
 
 qc_report = Blueprint("qc_report", __name__)
 
@@ -440,23 +439,21 @@ def build_table(reportTable, samples, columnFeatures, order):
                         )
                         responseColumns.append(columnFeatures[orderedColumn])
 
+                    if orderedColumn == "Concentration":
+                        concentrationColumn = copy.deepcopy(
+                            columnFeatures[orderedColumn]
+                        )
+                        concentrationColumn["columnHeader"] = (
+                            columnFeatures[orderedColumn]["columnHeader"]
+                            + ' ('
+                            + samples[0]['concentrationUnits']
+                            + ')'
+                        )
+                        responseHeaders.append(concentrationColumn["columnHeader"])
+                        responseColumns.append(concentrationColumn)
+
                     else:
                         responseColumns.append(columnFeatures[orderedColumn])
-
-                    if orderedColumn == "Concentration":
-                        responseHeaders.append(
-                            columnFeatures[orderedColumn]["columnHeader"]
-                            + ' ('
-                            + samples[0]['concentrationUnits']
-                            + ')'
-                        )
-                        columnFeatures[orderedColumn]["columnHeader"] = (
-                            columnFeatures[orderedColumn]["columnHeader"]
-                            + ' ('
-                            + samples[0]['concentrationUnits']
-                            + ')'
-                        )
-                    else:
                         responseHeaders.append(
                             columnFeatures[orderedColumn]["columnHeader"]
                         )
