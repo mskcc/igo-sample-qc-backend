@@ -12,8 +12,10 @@ IGO_EMAIL = app.config["IGO_EMAIL"]
 ENV = app.config["ENV"]
 
 
-def send_decision_notification(decision, decision_user, recipients):
-    receiver_email = "wagnerl@mskcc.org,patrunoa@mskcc.org"
+def send_decision_notification(decision, decision_user, recipients, initial_author):
+    receiver_email = (
+        "wagnerl@mskcc.org,patrunoa@mskcc.org," + initial_author + "@mskcc.org"
+    )
     # receiver_email = recipients
     sender_email = NOTIFICATION_SENDER
     # print(receiver_email.split(","))

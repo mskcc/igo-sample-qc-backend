@@ -341,7 +341,10 @@ def set_qc_investigator_decision():
         #         recipients = recipients + "," + commentrelation.recipients
 
         notify.send_decision_notification(
-            decision_to_save, decision_user, set(comment_relation.recipients.split(","))
+            decision_to_save,
+            decision_user,
+            set(comment_relation.recipients.split(",")),
+            comment_relation.author,
         )
 
         db.session.commit()
@@ -350,7 +353,9 @@ def set_qc_investigator_decision():
         print(traceback.print_exc())
         db.session.rollback()
 
-        responseObject = {'message': "Failed to submit."}
+        responseObject = {
+            'message': "Failed to submit. Please contact an admin by emailing zzPDL_SKI_IGO_DATA@mskcc.org"
+        }
         return make_response(jsonify(responseObject), 400, None)
 
     return make_response(jsonify(responseObject), 400, None)
@@ -558,7 +563,7 @@ def build_table(reportTable, samples, constantColumnFeatures, order):
 
                 # else:
                 #     responseSample[datafield] = ""
-                responseSamples.append(responseSample)
+            responseSamples.append(responseSample)
         # generate handsontable header object
         for column in responseColumnFeatures:
             responseHeaders.append(column["columnHeader"])
