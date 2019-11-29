@@ -187,7 +187,7 @@ def get_qc_report_samples():
             # assemble table data
             lims_data = r.json()
             # print(lims_data)
-            columnFeatures = dict()
+            constantColumnFeatures = dict()
             tables = dict()
 
             sharedColumns = constants.sharedColumns
@@ -206,9 +206,12 @@ def get_qc_report_samples():
                         read_only = is_investigator_decision_read_only(lims_data[field])
                         dnaColumns = constants.dnaColumns
                         dnaColumns["InvestigatorDecision"]["readOnly"] = read_only
-                        columnFeatures = mergeColumns(sharedColumns, dnaColumns)
+                        constantColumnFeatures = mergeColumns(sharedColumns, dnaColumns)
                         tables[field] = build_table(
-                            field, lims_data[field], columnFeatures, constants.dnaOrder
+                            field,
+                            lims_data[field],
+                            constantColumnFeatures,
+                            constants.dnaOrder,
                         )
                         tables[field]["readOnly"] = read_only
 
@@ -220,9 +223,12 @@ def get_qc_report_samples():
                         read_only = is_investigator_decision_read_only(lims_data[field])
                         rnaColumns = constants.rnaColumns
                         rnaColumns["InvestigatorDecision"]["readOnly"] = read_only
-                        columnFeatures = mergeColumns(sharedColumns, rnaColumns)
+                        constantColumnFeatures = mergeColumns(sharedColumns, rnaColumns)
                         tables[field] = build_table(
-                            field, lims_data[field], columnFeatures, constants.rnaOrder
+                            field,
+                            lims_data[field],
+                            constantColumnFeatures,
+                            constants.rnaOrder,
                         )
                         tables[field]["readOnly"] = read_only
 
@@ -233,11 +239,13 @@ def get_qc_report_samples():
                         read_only = is_investigator_decision_read_only(lims_data[field])
                         libraryColumns = constants.libraryColumns
                         libraryColumns["InvestigatorDecision"]["readOnly"] = read_only
-                        columnFeatures = mergeColumns(sharedColumns, libraryColumns)
+                        constantColumnFeatures = mergeColumns(
+                            sharedColumns, libraryColumns
+                        )
                         tables[field] = build_table(
                             field,
                             lims_data[field],
-                            columnFeatures,
+                            constantColumnFeatures,
                             constants.libraryOrder,
                         )
                         tables[field]["readOnly"] = read_only
@@ -246,20 +254,20 @@ def get_qc_report_samples():
                     if is_lab_member or (
                         is_authorized_for_request and "Pathology Report" in reports
                     ):
-                        columnFeatures = constants.pathologyColumns
+                        constantColumnFeatures = constants.pathologyColumns
                         tables[field] = build_table(
                             field,
                             lims_data[field],
-                            columnFeatures,
+                            constantColumnFeatures,
                             constants.pathologyOrder,
                         )
 
                 if field == "attachments":
-                    columnFeatures = constants.attachmentColumns
+                    constantColumnFeatures = constants.attachmentColumns
                     tables[field] = build_table(
                         field,
                         lims_data[field],
-                        columnFeatures,
+                        constantColumnFeatures,
                         constants.attachmentOrder,
                     )
 
@@ -419,145 +427,145 @@ def mergeColumns(dict1, dict2):
     return res
 
 
-def build_table(reportTable, samples, columnFeatures, order):
-    responseColumns = []
+def build_table(reportTable, samples, constantColumnFeatures, order):
+    responseColumnFeatures = []
     responseHeaders = []
     responseSamples = []
-    # print(samples)
+    #  leave empty reports empty
     if not samples:
         return {}
     else:
-        # sort!
-        for orderedColumn in order:
-            try:
-                if orderedColumn in columnFeatures:
+        # disregard LIMS order and apply order from constants to column feature constant
+        for constantOrderedColumn in order:
 
-                    if "picklistName" in columnFeatures[orderedColumn]:
-                        # print(responseColumns)
-                        columnFeatures[orderedColumn]["source"] = get_picklist(
-                            columnFeatures[orderedColumn]["picklistName"]
-                        )
-                        responseColumns.append(columnFeatures[orderedColumn])
+            if constantOrderedColumn in constantColumnFeatures:
 
-                    if orderedColumn == "Concentration":
-                        concentrationColumn = copy.deepcopy(
-                            columnFeatures[orderedColumn]
-                        )
-                        concentrationColumn["columnHeader"] = (
-                            columnFeatures[orderedColumn]["columnHeader"]
-                            + ' ('
-                            + samples[0]['concentrationUnits']
-                            + ')'
-                        )
-                        responseHeaders.append(concentrationColumn["columnHeader"])
-                        responseColumns.append(concentrationColumn)
-
-                    else:
-                        responseColumns.append(columnFeatures[orderedColumn])
-                        responseHeaders.append(
-                            columnFeatures[orderedColumn]["columnHeader"]
-                        )
-
-            except:
-                # If we didn't expect it to be returned from LIMS, delete it.
-                print(
-                    orderedColumn + " not found in expected columns for " + reportTable
-                )
-                print(traceback.print_exc())
-
-                try:
-                    # delete field from sample if we don't expect it in the FE
-                    for sample in responseSamples:
-                        sample.pop(orderedColumn)
-                except:
-                    #
-                    # if sample.pop failed, excpected column not found in LIMS result, return it to FE anyway.
-                    print(traceback.print_exc())
-                    responseColumns[orderedColumn] = {}
-                    responseHeaders.append(
-                        columnFeatures[orderedColumn]["columnHeader"]
+                # account for special columns like dropdowns or unitless measurments
+                if "picklistName" in constantColumnFeatures[constantOrderedColumn]:
+                    constantColumnFeatures[constantOrderedColumn][
+                        "source"
+                    ] = get_picklist(
+                        constantColumnFeatures[constantOrderedColumn]["picklistName"]
+                    )
+                    responseColumnFeatures.append(
+                        constantColumnFeatures[constantOrderedColumn]
                     )
 
+                elif constantOrderedColumn == "Concentration":
+                    concentrationColumn = copy.deepcopy(
+                        constantColumnFeatures[constantOrderedColumn]
+                    )
+                    concentrationColumn["columnHeader"] = (
+                        constantColumnFeatures[constantOrderedColumn]["columnHeader"]
+                        + ' ('
+                        + samples[0]['concentrationUnits']
+                        + ')'
+                    )
+                    responseColumnFeatures.append(concentrationColumn)
+
+                elif constantOrderedColumn == "TotalMass":
+                    massColumn = copy.deepcopy(
+                        constantColumnFeatures[constantOrderedColumn]
+                    )
+                    if samples[0]['concentrationUnits'].lower() == "ng/ul":
+
+                        massColumn["columnHeader"] = (
+                            constantColumnFeatures[constantOrderedColumn][
+                                "columnHeader"
+                            ]
+                            + ' (ng)'
+                        )
+                    if samples[0]['concentrationUnits'].lower() == "nm":
+
+                        massColumn["columnHeader"] = (
+                            constantColumnFeatures[constantOrderedColumn][
+                                "columnHeader"
+                            ]
+                            + ' (fmole)'
+                        )
+                    responseColumnFeatures.append(massColumn)
+
+                else:
+                    responseColumnFeatures.append(
+                        constantColumnFeatures[constantOrderedColumn]
+                    )
+
+        # go through samples to format for FE and handsontable
         for sample in samples:
             responseSample = {}
+            # samples can be selected to be hidden in LIMS
             if "hideFromSampleQC" in sample and sample["hideFromSampleQC"] == True:
                 continue
-            for orderedColumn in order:
 
-                formatted_ordered_col = orderedColumn[0].lower() + orderedColumn[1:]
-                try:
-                    dataFieldName = columnFeatures[orderedColumn]["data"]
-                    if formatted_ordered_col in sample:
-                        orderedSample = sample[formatted_ordered_col]
+            if reportTable == "attachments":
+                responseSample["action"] = (
+                    "<div record-id='"
+                    + str(sample['recordId'])
+                    + "' file-name='"
+                    + str(sample['fileName'])
+                    + "' class ='download-icon'><i class=%s>%s</i></div>"
+                    % ("material-icons", "cloud_download")
+                )
 
-                        if orderedColumn == "IgoQcRecommendation":
+            for datafield in sample:
+                datafield_formatted = datafield[0].upper() + datafield[1:]
+                sample_field_value = sample[datafield]
 
-                            recommendation = sample[
-                                orderedColumn[0].lower() + orderedColumn[1:]
-                            ].lower()
-                            responseSample[dataFieldName] = "<div class=%s>%s</div>" % (
-                                recommendation,
-                                orderedSample,
+                if datafield_formatted in order:
+                    if datafield == "igoQcRecommendation":
+                        recommendation = sample_field_value
+
+                        responseSample[datafield] = "<div class=%s>%s</div>" % (
+                            recommendation.lower(),
+                            recommendation,
+                        )
+                    # round measurments to 1 decimal
+                    elif datafield in [
+                        "concentration",
+                        "totalMass",
+                        "rin",
+                        "din",
+                        "dV200",
+                    ]:
+                        if sample_field_value:
+                            responseSample[datafield] = round(
+                                float(sample_field_value), 1
                             )
-                        elif (
-                            orderedColumn == "Concentration"
-                            or orderedColumn == "TotalMass"
-                            or orderedColumn == "Rin"
-                            or orderedColumn == "Din"
-                            or orderedColumn == "DV200"
-                        ):
-                            if orderedSample:
-                                responseSample[dataFieldName] = round(
-                                    float(orderedSample), 1
-                                )
-                        elif orderedColumn == "Volume" or orderedColumn == "AvgSize":
-                            if orderedSample:
-                                responseSample[dataFieldName] = round(
-                                    float(orderedSample), 0
-                                )
-
-                        elif orderedColumn == "Action":
-                            responseSample[dataFieldName] = (
-                                "<div class ='download-icon'><i class=%s>%s</i></div>"
-                                % ("material-icons", "cloud_download")
+                    elif datafield == "volume" or datafield == "avgSize":
+                        if sample_field_value:
+                            responseSample[datafield] = round(
+                                float(sample_field_value), 0
                             )
-                        elif orderedColumn == "SampleStatus":
-                            responseSample[dataFieldName] = "<div class=%s>%s</div>" % (
-                                'pathology-status',
-                                orderedSample,
-                            )
-                        elif orderedColumn == "InvestigatorDecision":
-                            # print(sample)
-                            if dataFieldName in sample:
-                                responseSample[dataFieldName] = orderedSample
-                            else:
-                                responseSample[dataFieldName] = None
+                    elif datafield == "action":
+                        responseSample[datafield] = (
+                            "<div class ='download-icon'><i class=%s>%s</i></div>"
+                            % ("material-icons", "cloud_download")
+                        )
+                    elif datafield == "sampleStatus":
+                        responseSample[datafield] = "<div class=%s>%s</div>" % (
+                            'pathology-status',
+                            sample_field_value,
+                        )
+                    elif datafield == "investigatorDecision":
+                        if datafield in sample:
+                            responseSample[datafield] = sample_field_value
                         else:
-
-                            responseSample[dataFieldName] = orderedSample
-
+                            responseSample[datafield] = None
                     else:
-                        if orderedColumn == "Action":
-                            responseSample[dataFieldName] = (
-                                "<div record-id='"
-                                + str(sample['recordId'])
-                                + "' file-name='"
-                                + str(sample['fileName'])
-                                + "' class ='download-icon'><i class=%s>%s</i></div>"
-                                % ("material-icons", "cloud_download")
-                            )
-                        else:
-                            responseSample[dataFieldName] = ""
-                except:
-                    print(traceback.print_exc())
-                    # print(sample)
-                    # Excpected column not found in LIMS result, return it to FE anyway.
-                    responseSample[dataFieldName] = ""
+                        responseSample[datafield] = sample_field_value
+                # if value/column was not returned in LIMS but expected by our order, present it empty
+                # it will have still been added to the columns
+                else:
+                    responseSample[datafield] = ""
+
             responseSamples.append(responseSample)
 
+        # generate handsontable header object
+        for column in responseColumnFeatures:
+            responseHeaders.append(column["columnHeader"])
         return {
             "data": responseSamples,
-            "columnFeatures": responseColumns,
+            "columnFeatures": responseColumnFeatures,
             "columnHeaders": responseHeaders,
         }
 
@@ -602,7 +610,7 @@ def build_pending_list(pendings):
 
     return {
         "data": responsePendings,
-        "columnFeatures": [
+        "constantColumnFeatures": [
             {"data": "request_id", "readOnly": "true"},
             {"data": "date", "readOnly": "true"},
             {"data": "most_recent_date", "readOnly": "true"},
@@ -639,7 +647,7 @@ def build_user_pending_list(pendings):
 
     return {
         "data": responsePendings,
-        "columnFeatures": [
+        "constantColumnFeatures": [
             {"data": "request_id", "readOnly": "true"},
             {"data": "date", "readOnly": "true"},
             {"data": "most_recent_date", "readOnly": "true"},
@@ -663,7 +671,7 @@ def build_attachment_list(field, attachments):
 
     return {
         "data": responseAttachments,
-        "columnFeatures": [
+        "constantColumnFeatures": [
             {"data": "fileName", "readOnly": "true"},
             {"data": "action", "readOnly": "true"},
             # last column will be hidden in FE
