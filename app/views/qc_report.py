@@ -588,9 +588,8 @@ def build_pending_list(pendings):
         responsePending["report"] = pending.report
         responsePending["author"] = pending.author
         responsePending["recipients"] = (
-            "<div class='recipients-col'>"
-            + pending.recipients.replace(',', ',\n')
-            + "</div>"
+            "<div class='recipients-col'>%s</div>"
+            % pending.recipients.replace(',', ',\n')
         )
         responsePending["lab_notifications"] = 0
         responsePending["pm_notifications"] = 0
@@ -615,7 +614,7 @@ def build_pending_list(pendings):
 
     return {
         "data": responsePendings,
-        "constantColumnFeatures": [
+        "columnFeatures": [
             {"data": "request_id", "readOnly": "true"},
             {"data": "date", "readOnly": "true"},
             {"data": "most_recent_date", "readOnly": "true"},
@@ -652,7 +651,7 @@ def build_user_pending_list(pendings):
 
     return {
         "data": responsePendings,
-        "constantColumnFeatures": [
+        "columnFeatures": [
             {"data": "request_id", "readOnly": "true"},
             {"data": "date", "readOnly": "true"},
             {"data": "most_recent_date", "readOnly": "true"},
@@ -676,7 +675,7 @@ def build_attachment_list(field, attachments):
 
     return {
         "data": responseAttachments,
-        "constantColumnFeatures": [
+        "columnFeatures": [
             {"data": "fileName", "readOnly": "true"},
             {"data": "action", "readOnly": "true"},
             # last column will be hidden in FE
