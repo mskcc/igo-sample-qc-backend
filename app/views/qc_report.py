@@ -555,15 +555,14 @@ def build_table(reportTable, samples, constantColumnFeatures, order):
                         responseSample[datafield] = sample_field_value
                 # if value/column was not returned in LIMS but expected by our order, present it empty
                 # it will have still been added to the columns
+
                 # else:
                 #     responseSample[datafield] = ""
-
-            responseSamples.append(responseSample)
 
         # generate handsontable header object
         for column in responseColumnFeatures:
             responseHeaders.append(column["columnHeader"])
-        print(responseHeaders)
+
         return {
             "data": responseSamples,
             "columnFeatures": responseColumnFeatures,
