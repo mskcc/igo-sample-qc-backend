@@ -152,7 +152,7 @@ def get_qc_report_samples():
     if is_lab_member:
         is_authorized_for_request = True
     else:
-        is_authorized_for_request = is_user_authorized_for_request(request_id, username)
+        is_authorized_for_request = is_user_authorized_for_request(request_id, user)
 
     if not is_lab_member and not is_authorized_for_request:
         return make_response(
@@ -168,7 +168,6 @@ def get_qc_report_samples():
         )
 
         # if not lab member but auth'd, get commentrelations and only show reports that are ready
-
         if not is_lab_member and is_authorized_for_request:
             comment_relations = CommentRelation.query.filter(
                 CommentRelation.request_id == request_id
@@ -428,6 +427,7 @@ def mergeColumns(dict1, dict2):
 
 
 def build_table(reportTable, samples, constantColumnFeatures, order):
+    # print(samples)
     responseColumnFeatures = []
     responseHeaders = []
     responseSamples = []
@@ -558,7 +558,7 @@ def build_table(reportTable, samples, constantColumnFeatures, order):
 
                 # else:
                 #     responseSample[datafield] = ""
-
+                responseSamples.append(responseSample)
         # generate handsontable header object
         for column in responseColumnFeatures:
             responseHeaders.append(column["columnHeader"])
@@ -697,7 +697,6 @@ def get_picklist(listname):
             picklist.append(value)
         uwsgi.cache_set(listname, pickle.dumps(picklist), 900)
         return pickle.loads(uwsgi.cache_get(listname))
-    # return picklist
 
 
 def tmp_file_exists(file_name):
@@ -706,37 +705,17 @@ def tmp_file_exists(file_name):
 
 # returns true if user is associated with request as recipient
 # returns false if request has no inital comment OR user is not associated
-def is_user_authorized_for_request(request_id, username):
+def is_user_authorized_for_request(request_id, user):
     commentrelations = CommentRelation.query.filter_by(request_id=request_id)
     for relation in commentrelations:
-        if username in relation.recipients or username in relation.author:
+        # username listed specifically
+        if user.username in relation.recipients or user.username in relation.author:
             return True
+        # one of user's groups listed
+        for recipient in relation.recipients.split(","):
+            if re.sub("@mskcc.org", "", recipient) in user.groups:
+                return True
     return False
-
-
-# def save_decision(decisions, request_id, username):
-#     try:
-#         user = User.query.filter_by(username=username).first()
-
-#         decision_to_save = Decision(
-#             decisions=json.dumps(decisions),
-#             request_id=request_id,
-#             report=report,
-#             date_created=datetime.now(),
-#             date_updated=datetime.now(),
-#         )
-
-#         user.decisions.append(decision_to_save)
-#         comment_relation.decisions.append(decision_to_save)
-
-#         db.session.commit()
-#         return decision_to_save
-#     except:
-#         print(traceback.print_exc())
-
-#         return None
-
-#     return None
 
 
 # iterate over lims returned investigator decisions, set column to be editable if at least one decision is unfilled

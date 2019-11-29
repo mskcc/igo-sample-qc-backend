@@ -46,6 +46,7 @@ class User(db.Model):
     username = db.Column(db.String(40), nullable=False, unique=True)
     title = db.Column(db.String(40), nullable=True)
     role = db.Column(db.String(40), nullable=True)
+    groups = db.Column(db.Text(), nullable=True)
     comments = relationship("Comment")
     decisions = relationship("Decision")
     commentrelations = relationship("CommentRelation")
@@ -57,6 +58,7 @@ class User(db.Model):
         self.full_name = full_name
         self.role = role
         self.full_name = full_name
+        self.groups = groups
 
     @property
     def serialize(self):
@@ -67,6 +69,7 @@ class User(db.Model):
             'title': self.title,
             'full_name': self.full_name,
             'role': self.role,
+            'groups': self.groups,
         }
 
     # if you call this from the view (like, User.login(username, password) it will pass the credentials

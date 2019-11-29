@@ -68,27 +68,35 @@ def login():
 
         # catches invalid credentials from LDAP call in user model
         except ldap.INVALID_CREDENTIALS:
-            # log_error(
-            # "user " + username + " trying to login with invalid credentials"
-            # )
             responseObject = {
                 'message': 'Invalid username or password. Please try again.'
             }
             return make_response(jsonify(responseObject), 401, None)
-        # if the user is part of GRP_SKI_Haystack_NetIQ
+        # if the user is part of labmember group
         lab_member = is_lab_member(result)
-        authorized_user = is_lab_member(result)
-        if authorized_user or lab_member:
+        if lab_member:
             full_name = get_user_fullname(result)
             title = get_user_title(result)
-
+            # users are saved with their zzPDL memberships, updated on every login
             if lab_member:
                 log_info('lab_member user logged in: ' + username)
-                user = load_username(username, title, full_name, "lab_member")
+                user = load_username(
+                    username,
+                    title,
+                    full_name,
+                    "lab_member",
+                    ', '.join(format_result_zzPDL(result)),
+                )
 
             else:
                 log_info('non_lab_member user logged in: ' + username)
-                user = load_username(username, title, full_name, "user")
+                user = load_username(
+                    username,
+                    title,
+                    full_name,
+                    "user",
+                    ', '.join(format_result_zzPDL(result)),
+                )
 
             login_user(user)
 
@@ -118,11 +126,6 @@ def login():
 
             return make_response(jsonify(responseObject), 200, None)
         else:
-            # log_error(
-            #     "user "
-            #     + username
-            #     + " AD authenticated but not in GRP_SKI_Haystack_NetIQ"
-            # )
             return make_response(
                 'You are not authorized to view this website. Please email <a href="mailto:wagnerl@mkscc.org">sample intake support</a> if you need any assistance.',
                 403,
@@ -215,11 +218,23 @@ def load_users_of_role(role):
     return users_response
 
 
-def load_username(username, title, full_name, role):
+def load_username(username, title, full_name, role, groups):
     user = User.query.filter_by(username=username).first()
+
+    print(type(groups))
+    print(groups)
     if not user:
-        user = User(username=username, title=title, full_name=full_name, role=role)
+        user = User(
+            username=username,
+            title=title,
+            full_name=full_name,
+            role=role,
+            groups=groups,
+        )
         db.session.add(user)
+        db.session.commit()
+    else:
+        user.groups = groups
         db.session.commit()
 
     return user
@@ -258,3 +273,13 @@ def format_result_group(result):
     groups = re.sub('CN=Users', '', str(result))
     # returns all matching groups
     return p.findall(groups)
+
+
+# returns groups the user is a part of
+def format_result_zzPDL(result):
+    print(result)
+    # compiles reg ex pattern into reg ex object
+    groups = re.findall('CN=(zzPDL.*?)\,', str(result))
+    # groups = re.sub('CN=', '', p[0])
+    # returns all matching groups
+    return groups
