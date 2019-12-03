@@ -271,7 +271,12 @@ def get_qc_report_samples():
                         constants.attachmentOrder,
                     )
 
-            responseObject = {'tables': tables, 'read_only': read_only}
+            decisions = get_decisions_for_request(request_id)
+            if decisions:
+                responseObject = {'tables': tables, 'decisions': decisions, 'read_only': read_only}
+            else:
+                responseObject = {'tables': tables, 'read_only': read_only}
+
             # print(responseObject)
 
             return make_response(responseObject, 200, None)
@@ -614,6 +619,14 @@ def build_table(reportTable, samples, constantColumnFeatures, order):
             "columnFeatures": responseColumnFeatures,
             "columnHeaders": responseHeaders,
         }
+
+
+def get_decisions_for_request(request_id):
+    decisions_response = []
+    decisions =  Decision.query.filter_by(request_id=request_id, is_submitted=False)    
+    for x in decisions:
+        decisions_response.append(x.serialize)
+    return decisions_response
 
 
 def build_pending_list(pendings):
