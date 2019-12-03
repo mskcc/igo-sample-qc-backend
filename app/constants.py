@@ -72,7 +72,7 @@ sharedColumns = {
     "Volume": {
         "limsField": "Volume",
         "data": "volume",
-        "columnHeader": "Volume (ul)",
+        "columnHeader": "Volume (uL)",
         "readOnly": "true",
     },
     "TotalMass": {

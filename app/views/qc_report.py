@@ -67,7 +67,7 @@ def get_request_samples():
     # users see requests if they are a lab member
     # if they are associated with request AND if request already has a comment
     user_authorized_for_request = (
-        role == "lab_member" or is_user_authorized_for_request(request_id, username)
+        role == "lab_member" or is_user_authorized_for_request(request_id, load_user(username))
     )
     print(get_jwt_identity())
     # return is_dec_maker
