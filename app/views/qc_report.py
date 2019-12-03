@@ -67,7 +67,8 @@ def get_request_samples():
     # users see requests if they are a lab member
     # if they are associated with request AND if request already has a comment
     user_authorized_for_request = (
-        role == "lab_member" or is_user_authorized_for_request(request_id, load_user(username))
+        role == "lab_member"
+        or is_user_authorized_for_request(request_id, load_user(username))
     )
     print(get_jwt_identity())
     # return is_dec_maker
@@ -304,13 +305,17 @@ def set_qc_investigator_decision():
             )
         ).first()
 
-        decision_to_save = Decision(
-            decisions=json.dumps(decisions),
-            request_id=request_id,
-            date_created=datetime.now(),
-            date_updated=datetime.now(),
-        )
-
+        decision_to_save = Decision.query.filter_by(request_id=request_id).first()
+        if not decision_to_save:
+            decision_to_save = Decision(
+                decisions=json.dumps(decisions),
+                request_id=request_id,
+                is_submitted=True,
+                date_created=datetime.now(),
+                date_updated=datetime.now(),
+            )
+        else:
+            decision_to_save.is_submitted = True
         decision_user.decisions.append(decision_to_save)
         if comment_relation:
             comment_relation.decision.append(decision_to_save)
@@ -349,6 +354,42 @@ def set_qc_investigator_decision():
 
         db.session.commit()
         return r.text
+    except:
+        print(traceback.print_exc())
+        db.session.rollback()
+
+        responseObject = {
+            'message': "Failed to submit. Please contact an admin by emailing zzPDL_SKI_IGO_DATA@mskcc.org"
+        }
+        return make_response(jsonify(responseObject), 400, None)
+
+    return make_response(jsonify(responseObject), 400, None)
+
+
+@qc_report.route("/savePartialSubmission", methods=["POST"])
+def save_partial_decision():
+    payload = request.get_json()
+
+    username = payload["username"]
+    decisions = payload["decisions"]
+    request_id = payload["request_id"]
+    report = payload["report"]
+    try:
+        decision_user = User.query.filter_by(username=username).first()
+
+        decision_to_save = Decision(
+            decisions=json.dumps(decisions),
+            request_id=request_id,
+            is_submitted=False,
+            date_created=datetime.now(),
+            date_updated=datetime.now(),
+        )
+        db.session.add(decision_to_save)
+
+        db.session.commit()
+        responseObject = {'message': "Partial decisions saved."}
+
+        return make_response(jsonify(responseObject), 200, None)
     except:
         print(traceback.print_exc())
         db.session.rollback()

@@ -322,6 +322,7 @@ def save_initial_comment_and_relation(
                 decisions=json.dumps(decisions_made[report]),
                 request_id=request_id,
                 is_igo_decision=True,
+                is_submitted=True,
                 date_created=datetime.now(),
                 date_updated=datetime.now(),
             )

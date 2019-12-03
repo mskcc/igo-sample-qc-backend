@@ -13,6 +13,7 @@ class Decision(db.Model):
     comment_relation_id = db.Column(db.Integer, db.ForeignKey('commentrelations.id'))
     decisions = db.Column(db.Text(), nullable=False)
     is_igo_decision = db.Column(db.Boolean(), nullable=False)
+    is_submitted = db.Column(db.Boolean(), nullable=False)
     date_created = db.Column(db.DateTime, nullable=True)
     date_updated = db.Column(db.DateTime, nullable=True)
 
@@ -22,12 +23,14 @@ class Decision(db.Model):
         decisions,
         date_updated,
         is_igo_decision=False,
+        is_submitted=False,
         date_created=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
     ):
 
         self.request_id = request_id
         self.decisions = decisions
         self.is_igo_decision = is_igo_decision
+        self.is_submitted = is_submitted
         self.date_created = date_created
         self.date_updated = date_updated
 
@@ -39,6 +42,7 @@ class Decision(db.Model):
             "request_id": self.request_id,
             "decisions": self.decisions,
             "is_igo_decision": self.is_igo_decision,
+            "is_submitted": self.is_submitted,
             "date_created": self.date_created.strftime("%Y-%m-%d %H:%M:%S"),
             "date_updated": self.date_updated.strftime("%Y-%m-%d %H:%M:%S"),
         }
