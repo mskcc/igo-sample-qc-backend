@@ -51,7 +51,7 @@ class User(db.Model):
     decisions = relationship("Decision")
     commentrelations = relationship("CommentRelation")
 
-    def __init__(self, username, full_name=None, title=None, role='user'):
+    def __init__(self, username, groups=None, full_name=None, title=None, role='user'):
 
         self.username = username
         self.title = title
