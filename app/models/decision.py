@@ -11,7 +11,8 @@ class Decision(db.Model):
     request_id = db.Column(db.String(40), nullable=False)
     decision_maker = db.Column(db.String(40), db.ForeignKey('users.username'))
     comment_relation_id = db.Column(db.Integer, db.ForeignKey('commentrelations.id'))
-    decisions = db.Column(db.Text(), nullable=False)
+    report = db.Column(db.String(40), nullable=False)
+    decisions = db.Column(db.Text(4294000000), nullable=False)
     is_igo_decision = db.Column(db.Boolean(), nullable=False)
     is_submitted = db.Column(db.Boolean(), nullable=False)
     date_created = db.Column(db.DateTime, nullable=True)
@@ -20,6 +21,7 @@ class Decision(db.Model):
     def __init__(
         self,
         request_id,
+        report,
         decisions,
         date_updated,
         is_igo_decision=False,
@@ -28,6 +30,7 @@ class Decision(db.Model):
     ):
 
         self.request_id = request_id
+        self.report = report
         self.decisions = decisions
         self.is_igo_decision = is_igo_decision
         self.is_submitted = is_submitted
@@ -40,6 +43,7 @@ class Decision(db.Model):
         return {
             "id": self.id,
             "request_id": self.request_id,
+            "report": self.report,
             "decisions": self.decisions,
             "is_igo_decision": self.is_igo_decision,
             "is_submitted": self.is_submitted,

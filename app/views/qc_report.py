@@ -15,6 +15,7 @@ from flask_jwt_extended import (
 )
 from flask_login import login_user, logout_user, current_user
 import requests
+import ast
 from datetime import datetime
 import os.path
 import uwsgi, pickle
@@ -186,7 +187,7 @@ def get_qc_report_samples():
         if r.status_code == 200:
             # assemble table data
             lims_data = r.json()
-            # print(lims_data)
+            print("LIMS RECEICVED", lims_data, "LIMS RECEICVED")
             constantColumnFeatures = dict()
             tables = dict()
 
@@ -195,7 +196,7 @@ def get_qc_report_samples():
 
             # read_only = False
             # sharedColumns["InvestigatorDecision"]["readOnly"] = read_only
-
+            decisions = get_decisions_for_request(request_id)
             for field in lims_data:
 
                 if field == "dnaReportSamples":
@@ -212,6 +213,7 @@ def get_qc_report_samples():
                             lims_data[field],
                             constantColumnFeatures,
                             constants.dnaOrder,
+                            decisions,
                         )
                         tables[field]["readOnly"] = read_only
 
@@ -229,6 +231,7 @@ def get_qc_report_samples():
                             lims_data[field],
                             constantColumnFeatures,
                             constants.rnaOrder,
+                            decisions,
                         )
                         tables[field]["readOnly"] = read_only
 
@@ -247,6 +250,7 @@ def get_qc_report_samples():
                             lims_data[field],
                             constantColumnFeatures,
                             constants.libraryOrder,
+                            decisions,
                         )
                         tables[field]["readOnly"] = read_only
 
@@ -271,11 +275,7 @@ def get_qc_report_samples():
                         constants.attachmentOrder,
                     )
 
-            decisions = get_decisions_for_request(request_id)
-            if decisions:
-                responseObject = {'tables': tables, 'decisions': decisions, 'read_only': read_only}
-            else:
-                responseObject = {'tables': tables, 'read_only': read_only}
+            responseObject = {'tables': tables, 'read_only': read_only}
 
             # print(responseObject)
 
@@ -313,6 +313,7 @@ def set_qc_investigator_decision():
         decision_to_save = Decision.query.filter_by(request_id=request_id).first()
         if not decision_to_save:
             decision_to_save = Decision(
+                report=(report),
                 decisions=json.dumps(decisions),
                 request_id=request_id,
                 is_submitted=True,
@@ -382,14 +383,31 @@ def save_partial_decision():
     try:
         decision_user = User.query.filter_by(username=username).first()
 
-        decision_to_save = Decision(
-            decisions=json.dumps(decisions),
-            request_id=request_id,
-            is_submitted=False,
-            date_created=datetime.now(),
-            date_updated=datetime.now(),
-        )
-        db.session.add(decision_to_save)
+        decision = Decision.query.filter_by(
+            request_id=request_id, report=report
+        ).first()
+
+        if decision:
+            print('dec found')
+            if decision.is_submitted:
+                responseObject = {
+                    'message': "This decision was already submitted to IGO and cannot be saved. Contact IGO if you need to make changes."
+                }
+
+                return make_response(jsonify(responseObject), 400, None)
+            else:
+                decision.decisions = json.dumps(decisions)
+
+        else:
+            decision_to_save = Decision(
+                decisions=json.dumps(decisions),
+                report=report,
+                request_id=request_id,
+                is_submitted=False,
+                date_created=datetime.now(),
+                date_updated=datetime.now(),
+            )
+            db.session.add(decision_to_save)
 
         db.session.commit()
         responseObject = {'message': "Partial decisions saved."}
@@ -400,7 +418,7 @@ def save_partial_decision():
         db.session.rollback()
 
         responseObject = {
-            'message': "Failed to submit. Please contact an admin by emailing zzPDL_SKI_IGO_DATA@mskcc.org"
+            'message': "Failed to save. Please contact an admin by emailing zzPDL_SKI_IGO_DATA@mskcc.org"
         }
         return make_response(jsonify(responseObject), 400, None)
 
@@ -477,11 +495,12 @@ def mergeColumns(dict1, dict2):
     return res
 
 
-def build_table(reportTable, samples, constantColumnFeatures, order):
+def build_table(reportTable, samples, constantColumnFeatures, order, decisions=None):
     # print(samples)
     responseColumnFeatures = []
     responseHeaders = []
     responseSamples = []
+
     #  leave empty reports empty
     if not samples:
         return {}
@@ -597,11 +616,34 @@ def build_table(reportTable, samples, constantColumnFeatures, order):
                             'pathology-status',
                             sample_field_value,
                         )
+                    #  investigator decisions will be overwritten by non-empty lims decisions
                     elif datafield == "investigatorDecision":
-                        if datafield in sample:
+                        if datafield in sample and sample_field_value:
+                            print(sample_field_value, "sample_field_value")
                             responseSample[datafield] = sample_field_value
                         else:
-                            responseSample[datafield] = None
+                            if decisions:
+                                for decision_record in decisions:
+                                    for decision in ast.literal_eval(
+                                        decision_record.decisions
+                                    ):
+
+                                        for decided_sample in decision["samples"]:
+                                            if (
+                                                sample["recordId"]
+                                                == decided_sample["recordId"]
+                                            ):
+
+                                                responseSample[
+                                                    "investigatorDecision"
+                                                ] = str(
+                                                    decided_sample[
+                                                        "investigatorDecision"
+                                                    ]
+                                                )
+
+                            else:
+                                responseSample[datafield] = None
                     else:
                         responseSample[datafield] = sample_field_value
                 # if value/column was not returned in LIMS but expected by our order, present it empty
@@ -623,10 +665,10 @@ def build_table(reportTable, samples, constantColumnFeatures, order):
 
 def get_decisions_for_request(request_id):
     decisions_response = []
-    decisions =  Decision.query.filter_by(request_id=request_id, is_submitted=False)    
-    for x in decisions:
-        decisions_response.append(x.serialize)
-    return decisions_response
+    decisions = Decision.query.filter_by(request_id=request_id, is_submitted=False)
+    # for x in decisions:
+    #     decisions_response.append(x.serialize)
+    return decisions
 
 
 def build_pending_list(pendings):
