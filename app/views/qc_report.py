@@ -285,7 +285,7 @@ def get_qc_report_samples():
             response = make_response(r.text, r.status_code, None)
             return response
     except:
-        print(traceback.print_exc())
+        log_info(traceback.print_exc())
         responseObject = {
             'message': "The backend is experiencing some issues, please try again later or contact an admin."
         }
@@ -361,7 +361,7 @@ def set_qc_investigator_decision():
         db.session.commit()
         return r.text
     except:
-        print(traceback.print_exc())
+        log_info(traceback.print_exc())
         db.session.rollback()
 
         responseObject = {
@@ -414,7 +414,7 @@ def save_partial_decision():
 
         return make_response(jsonify(responseObject), 200, None)
     except:
-        print(traceback.print_exc())
+        log_info(traceback.print_exc())
         db.session.rollback()
 
         responseObject = {
@@ -460,7 +460,7 @@ def get_user_pending():
         return build_user_pending_list(pendings)
 
     except:
-        print(traceback.print_exc())
+        log_info(traceback.print_exc())
 
         return None
 
