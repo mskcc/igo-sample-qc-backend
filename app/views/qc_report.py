@@ -187,7 +187,6 @@ def get_qc_report_samples():
         if r.status_code == 200:
             # assemble table data
             lims_data = r.json()
-            print("LIMS RECEICVED", lims_data, "LIMS RECEICVED")
             constantColumnFeatures = dict()
             tables = dict()
 
