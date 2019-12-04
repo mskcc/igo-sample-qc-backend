@@ -435,7 +435,7 @@ def get_pending():
         return build_pending_list(pendings)
 
     except:
-        print(traceback.print_exc())
+        log_info(traceback.print_exc())
 
         return None
 
