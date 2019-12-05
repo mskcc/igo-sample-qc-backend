@@ -618,7 +618,6 @@ def build_table(reportTable, samples, constantColumnFeatures, order, decisions=N
                     #  investigator decisions will be overwritten by non-empty lims decisions
                     elif datafield == "investigatorDecision":
                         if datafield in sample and sample_field_value:
-                            print(sample_field_value, "sample_field_value")
                             responseSample[datafield] = sample_field_value
                         else:
                             if decisions:
@@ -626,16 +625,22 @@ def build_table(reportTable, samples, constantColumnFeatures, order, decisions=N
                                     for decision in ast.literal_eval(
                                         decision_record.decisions
                                     ):
-
                                         for decided_sample in decision["samples"]:
                                             if (
-                                                sample["recordId"]
-                                                == decided_sample["recordId"]
-                                            ):
-
-                                                responseSample[
+                                                (
+                                                    sample["recordId"]
+                                                    == decided_sample["recordId"]
+                                                )
+                                                and 
                                                     "investigatorDecision"
-                                                ] = str(
+                                                in decided_sample
+                                            ):
+                                                print(
+                                                    decided_sample[
+                                                        "investigatorDecision"
+                                                    ]
+                                                )
+                                                responseSample[datafield] = str(
                                                     decided_sample[
                                                         "investigatorDecision"
                                                     ]
