@@ -145,7 +145,6 @@ def login():
 @jwt_required
 def logoutAccess():
     log_info('user logged out: ' + get_jwt_identity())
-    logout_user()
     jti = get_raw_jwt()['jti']
     try:
         revoked_token = BlacklistToken(jti=jti)
@@ -165,7 +164,6 @@ def logoutAccess():
 @jwt_refresh_token_required
 def logoutRefresh():
     log_info('user logged out: ' + get_jwt_identity())
-    logout_user()
     jti = get_raw_jwt()['jti']
     try:
         revoked_token = BlacklistToken(jti=jti)
@@ -179,6 +177,14 @@ def logoutRefresh():
     except Exception as e:
         responseObject = {'status': 'fail', 'message': e}
         return make_response(jsonify(responseObject)), 200
+
+
+@user.route('/refresh', methods=['GET'])
+@jwt_refresh_token_required
+def refresh():
+    current_jwt_user = get_jwt_identity()
+    access_token = create_access_token(identity=current_jwt_user)
+    return jsonify({'access_token': access_token, 'username': current_jwt_user}), 201
 
 
 @user.route('/submitFeedback', methods=['POST'])
@@ -230,11 +236,14 @@ def load_username(username, title, full_name, role, groups):
             full_name=full_name,
             role=role,
             groups=groups,
+            login_latest_date=datetime.datetime.now(),
         )
         db.session.add(user)
         db.session.commit()
     else:
         user.groups = groups
+        user.login_counter = user.login_counter + 1
+        user.login_latest_date = datetime.datetime.now()
         db.session.commit()
 
     return user
