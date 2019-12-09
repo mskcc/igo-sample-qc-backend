@@ -7,7 +7,6 @@ from sqlalchemy.ext.declarative import declarative_base
 
 import ldap
 
-
 # three roles:
 # igo_user: can view their projects
 # member: can see all projects
@@ -76,7 +75,6 @@ class User(db.Model):
         self.login_first_date = login_first_date
         self.login_latest_date = login_latest_date
 
-
     @property
     def serialize(self):
         """Return object data in easily serializable format"""
@@ -111,7 +109,6 @@ class User(db.Model):
             attrs,
         )
         # if you want to see what comes back in the terminal
-        # print(result)
 
         conn.unbind_s()
         return result
@@ -142,6 +139,7 @@ class User(db.Model):
 
     def get_role(self):
         return str(self.role)
+
     def get_login_counter(self):
         return str(self.login_counter)
 

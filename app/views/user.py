@@ -65,7 +65,7 @@ def login():
         # tries logging in
         try:
             result = User.try_login(username, password)
-
+            # return make_response(jsonify(responseObject), 401, None)
         # catches invalid credentials from LDAP call in user model
         except ldap.INVALID_CREDENTIALS:
             responseObject = {
@@ -269,8 +269,12 @@ def get_user_title(result):
 
 def get_user_fullname(result):
     p = re.search("displayName(.*?)\]\,", str(result))
-    full_name = re.sub(r'displayName\': \[b\'', "", p[0])
-    full_name = re.sub(r'\/.*', "", full_name)
+    if '"' in p[0]:
+        full_name = re.sub(r'displayName\': \[b\"', "", p[0])
+        full_name = re.sub(r'\/.*', "", full_name)
+    else:
+        full_name = re.sub(r'displayName\': \[b\'', "", p[0])
+        full_name = re.sub(r'\/.*', "", full_name)
     name = full_name.split(", ")[1] + " " + full_name.split(", ")[0]
     return name
 
