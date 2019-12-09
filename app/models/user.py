@@ -46,17 +46,36 @@ class User(db.Model):
     username = db.Column(db.String(40), nullable=False, unique=True)
     title = db.Column(db.String(40), nullable=True)
     role = db.Column(db.String(40), nullable=True)
+    groups = db.Column(db.Text(), nullable=True)
     comments = relationship("Comment")
     decisions = relationship("Decision")
     commentrelations = relationship("CommentRelation")
+    login_first_date = db.Column(db.DateTime, nullable=False)
+    login_latest_date = db.Column(db.DateTime, nullable=True)
+    login_counter = db.Column(db.Integer, nullable=False)
 
-    def __init__(self, username, full_name=None, title=None, role='user'):
+    def __init__(
+        self,
+        username,
+        login_latest_date,
+        groups=None,
+        full_name=None,
+        title=None,
+        role='user',
+        login_counter=1,
+        login_first_date=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+    ):
 
         self.username = username
         self.title = title
         self.full_name = full_name
         self.role = role
         self.full_name = full_name
+        self.groups = groups
+        self.login_counter = login_counter
+        self.login_first_date = login_first_date
+        self.login_latest_date = login_latest_date
+
 
     @property
     def serialize(self):
@@ -67,6 +86,10 @@ class User(db.Model):
             'title': self.title,
             'full_name': self.full_name,
             'role': self.role,
+            'groups': self.groups,
+            'login_counter': self.login_counter,
+            "login_first_date": self.login_first_date.strftime("%Y-%m-%d %H:%M:%S"),
+            "login_latest_date": self.login_latest_date.strftime("%Y-%m-%d %H:%M:%S"),
         }
 
     # if you call this from the view (like, User.login(username, password) it will pass the credentials
@@ -119,6 +142,8 @@ class User(db.Model):
 
     def get_role(self):
         return str(self.role)
+    def get_login_counter(self):
+        return str(self.login_counter)
 
 
 # def insert_initial_values(*args, **kwargs):

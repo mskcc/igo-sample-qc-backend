@@ -15,6 +15,7 @@ from flask_jwt_extended import (
 )
 from flask_login import login_user, logout_user, current_user
 import requests
+import ast
 from datetime import datetime
 import os.path
 import uwsgi, pickle
@@ -45,8 +46,7 @@ LIMS_API_ROOT = app.config["LIMS_API_ROOT"]
 LIMS_USER = app.config["LIMS_USER"]
 LIMS_PW = app.config["LIMS_PW"]
 TMP_FOLDER = app.config["TMP_FOLDER"]
-NOTIFICATION_SENDER = app.config["NOTIFICATION_SENDER"]
-IGO_EMAIL = app.config["IGO_EMAIL"]
+
 
 qc_report = Blueprint("qc_report", __name__)
 
@@ -68,7 +68,8 @@ def get_request_samples():
     # users see requests if they are a lab member
     # if they are associated with request AND if request already has a comment
     user_authorized_for_request = (
-        role == "lab_member" or is_user_authorized_for_request(request_id, username)
+        role == "lab_member"
+        or is_user_authorized_for_request(request_id, load_user(username))
     )
     print(get_jwt_identity())
     # return is_dec_maker
@@ -153,7 +154,7 @@ def get_qc_report_samples():
     if is_lab_member:
         is_authorized_for_request = True
     else:
-        is_authorized_for_request = is_user_authorized_for_request(request_id, username)
+        is_authorized_for_request = is_user_authorized_for_request(request_id, user)
 
     if not is_lab_member and not is_authorized_for_request:
         return make_response(
@@ -169,7 +170,6 @@ def get_qc_report_samples():
         )
 
         # if not lab member but auth'd, get commentrelations and only show reports that are ready
-
         if not is_lab_member and is_authorized_for_request:
             comment_relations = CommentRelation.query.filter(
                 CommentRelation.request_id == request_id
@@ -187,8 +187,7 @@ def get_qc_report_samples():
         if r.status_code == 200:
             # assemble table data
             lims_data = r.json()
-            # print(lims_data)
-            columnFeatures = dict()
+            constantColumnFeatures = dict()
             tables = dict()
 
             sharedColumns = constants.sharedColumns
@@ -196,7 +195,7 @@ def get_qc_report_samples():
 
             # read_only = False
             # sharedColumns["InvestigatorDecision"]["readOnly"] = read_only
-
+            decisions = get_decisions_for_request(request_id)
             for field in lims_data:
 
                 if field == "dnaReportSamples":
@@ -207,9 +206,13 @@ def get_qc_report_samples():
                         read_only = is_investigator_decision_read_only(lims_data[field])
                         dnaColumns = constants.dnaColumns
                         dnaColumns["InvestigatorDecision"]["readOnly"] = read_only
-                        columnFeatures = mergeColumns(sharedColumns, dnaColumns)
+                        constantColumnFeatures = mergeColumns(sharedColumns, dnaColumns)
                         tables[field] = build_table(
-                            field, lims_data[field], columnFeatures, constants.dnaOrder
+                            field,
+                            lims_data[field],
+                            constantColumnFeatures,
+                            constants.dnaOrder,
+                            decisions,
                         )
                         tables[field]["readOnly"] = read_only
 
@@ -221,9 +224,13 @@ def get_qc_report_samples():
                         read_only = is_investigator_decision_read_only(lims_data[field])
                         rnaColumns = constants.rnaColumns
                         rnaColumns["InvestigatorDecision"]["readOnly"] = read_only
-                        columnFeatures = mergeColumns(sharedColumns, rnaColumns)
+                        constantColumnFeatures = mergeColumns(sharedColumns, rnaColumns)
                         tables[field] = build_table(
-                            field, lims_data[field], columnFeatures, constants.rnaOrder
+                            field,
+                            lims_data[field],
+                            constantColumnFeatures,
+                            constants.rnaOrder,
+                            decisions,
                         )
                         tables[field]["readOnly"] = read_only
 
@@ -234,12 +241,15 @@ def get_qc_report_samples():
                         read_only = is_investigator_decision_read_only(lims_data[field])
                         libraryColumns = constants.libraryColumns
                         libraryColumns["InvestigatorDecision"]["readOnly"] = read_only
-                        columnFeatures = mergeColumns(sharedColumns, libraryColumns)
+                        constantColumnFeatures = mergeColumns(
+                            sharedColumns, libraryColumns
+                        )
                         tables[field] = build_table(
                             field,
                             lims_data[field],
-                            columnFeatures,
+                            constantColumnFeatures,
                             constants.libraryOrder,
+                            decisions,
                         )
                         tables[field]["readOnly"] = read_only
 
@@ -247,24 +257,25 @@ def get_qc_report_samples():
                     if is_lab_member or (
                         is_authorized_for_request and "Pathology Report" in reports
                     ):
-                        columnFeatures = constants.pathologyColumns
+                        constantColumnFeatures = constants.pathologyColumns
                         tables[field] = build_table(
                             field,
                             lims_data[field],
-                            columnFeatures,
+                            constantColumnFeatures,
                             constants.pathologyOrder,
                         )
 
                 if field == "attachments":
-                    columnFeatures = constants.attachmentColumns
+                    constantColumnFeatures = constants.attachmentColumns
                     tables[field] = build_table(
                         field,
                         lims_data[field],
-                        columnFeatures,
+                        constantColumnFeatures,
                         constants.attachmentOrder,
                     )
 
             responseObject = {'tables': tables, 'read_only': read_only}
+
             # print(responseObject)
 
             return make_response(responseObject, 200, None)
@@ -273,7 +284,7 @@ def get_qc_report_samples():
             response = make_response(r.text, r.status_code, None)
             return response
     except:
-        print(traceback.print_exc())
+        log_info(traceback.print_exc())
         responseObject = {
             'message': "The backend is experiencing some issues, please try again later or contact an admin."
         }
@@ -298,13 +309,18 @@ def set_qc_investigator_decision():
             )
         ).first()
 
-        decision_to_save = Decision(
-            decisions=json.dumps(decisions),
-            request_id=request_id,
-            date_created=datetime.now(),
-            date_updated=datetime.now(),
-        )
-
+        decision_to_save = Decision.query.filter_by(request_id=request_id).first()
+        if not decision_to_save:
+            decision_to_save = Decision(
+                report=(report),
+                decisions=json.dumps(decisions),
+                request_id=request_id,
+                is_submitted=True,
+                date_created=datetime.now(),
+                date_updated=datetime.now(),
+            )
+        else:
+            decision_to_save.is_submitted = True
         decision_user.decisions.append(decision_to_save)
         if comment_relation:
             comment_relation.decision.append(decision_to_save)
@@ -335,16 +351,74 @@ def set_qc_investigator_decision():
         #         recipients = recipients + "," + commentrelation.recipients
 
         notify.send_decision_notification(
-            decision_to_save, decision_user, set(comment_relation.recipients.split(","))
+            decision_to_save,
+            decision_user,
+            set(comment_relation.recipients.split(",")),
+            comment_relation.author,
         )
 
         db.session.commit()
         return r.text
     except:
-        print(traceback.print_exc())
+        log_info(traceback.print_exc())
         db.session.rollback()
 
-        responseObject = {'message': "Failed to submit."}
+        responseObject = {
+            'message': "Failed to submit. Please contact an admin by emailing zzPDL_SKI_IGO_DATA@mskcc.org"
+        }
+        return make_response(jsonify(responseObject), 400, None)
+
+    return make_response(jsonify(responseObject), 400, None)
+
+
+@qc_report.route("/savePartialSubmission", methods=["POST"])
+def save_partial_decision():
+    payload = request.get_json()
+
+    username = payload["username"]
+    decisions = payload["decisions"]
+    request_id = payload["request_id"]
+    report = payload["report"]
+    try:
+        decision_user = User.query.filter_by(username=username).first()
+
+        decision = Decision.query.filter_by(
+            request_id=request_id, report=report
+        ).first()
+
+        if decision:
+            print('dec found')
+            if decision.is_submitted:
+                responseObject = {
+                    'message': "This decision was already submitted to IGO and cannot be saved. Contact IGO if you need to make changes."
+                }
+
+                return make_response(jsonify(responseObject), 400, None)
+            else:
+                decision.decisions = json.dumps(decisions)
+
+        else:
+            decision_to_save = Decision(
+                decisions=json.dumps(decisions),
+                report=report,
+                request_id=request_id,
+                is_submitted=False,
+                date_created=datetime.now(),
+                date_updated=datetime.now(),
+            )
+            db.session.add(decision_to_save)
+
+        db.session.commit()
+        responseObject = {'message': "Partial decisions saved."}
+
+        return make_response(jsonify(responseObject), 200, None)
+    except:
+        log_info(traceback.print_exc())
+        db.session.rollback()
+
+        responseObject = {
+            'message': "Failed to save. Please contact an admin by emailing zzPDL_SKI_IGO_DATA@mskcc.org"
+        }
         return make_response(jsonify(responseObject), 400, None)
 
     return make_response(jsonify(responseObject), 400, None)
@@ -360,7 +434,7 @@ def get_pending():
         return build_pending_list(pendings)
 
     except:
-        print(traceback.print_exc())
+        log_info(traceback.print_exc())
 
         return None
 
@@ -385,7 +459,7 @@ def get_user_pending():
         return build_user_pending_list(pendings)
 
     except:
-        print(traceback.print_exc())
+        log_info(traceback.print_exc())
 
         return None
 
@@ -420,149 +494,185 @@ def mergeColumns(dict1, dict2):
     return res
 
 
-def build_table(reportTable, samples, columnFeatures, order):
-    responseColumns = []
+def build_table(reportTable, samples, constantColumnFeatures, order, decisions=None):
+    # print(samples)
+    responseColumnFeatures = []
     responseHeaders = []
     responseSamples = []
-    # print(samples)
+
+    #  leave empty reports empty
     if not samples:
         return {}
     else:
-        # sort!
-        for orderedColumn in order:
-            try:
-                if orderedColumn in columnFeatures:
+        # disregard LIMS order and apply order from constants to column feature constant
+        for constantOrderedColumn in order:
 
-                    if "picklistName" in columnFeatures[orderedColumn]:
-                        # print(responseColumns)
-                        columnFeatures[orderedColumn]["source"] = get_picklist(
-                            columnFeatures[orderedColumn]["picklistName"]
-                        )
-                        responseColumns.append(columnFeatures[orderedColumn])
+            if constantOrderedColumn in constantColumnFeatures:
 
-                    else:
-                        responseColumns.append(columnFeatures[orderedColumn])
-
-                    if orderedColumn == "Concentration":
-                        responseHeaders.append(
-                            columnFeatures[orderedColumn]["columnHeader"]
-                            + ' ('
-                            + samples[0]['concentrationUnits']
-                            + ')'
-                        )
-                        columnFeatures[orderedColumn]["columnHeader"] = (
-                            columnFeatures[orderedColumn]["columnHeader"]
-                            + ' ('
-                            + samples[0]['concentrationUnits']
-                            + ')'
-                        )
-                    else:
-                        responseHeaders.append(
-                            columnFeatures[orderedColumn]["columnHeader"]
-                        )
-
-            except:
-                # If we didn't expect it to be returned from LIMS, delete it.
-                print(
-                    orderedColumn + " not found in expected columns for " + reportTable
-                )
-                print(traceback.print_exc())
-
-                try:
-                    # delete field from sample if we don't expect it in the FE
-                    for sample in responseSamples:
-                        sample.pop(orderedColumn)
-                except:
-                    #
-                    # if sample.pop failed, excpected column not found in LIMS result, return it to FE anyway.
-                    print(traceback.print_exc())
-                    responseColumns[orderedColumn] = {}
-                    responseHeaders.append(
-                        columnFeatures[orderedColumn]["columnHeader"]
+                # account for special columns like dropdowns or unitless measurments
+                if "picklistName" in constantColumnFeatures[constantOrderedColumn]:
+                    constantColumnFeatures[constantOrderedColumn][
+                        "source"
+                    ] = get_picklist(
+                        constantColumnFeatures[constantOrderedColumn]["picklistName"]
+                    )
+                    responseColumnFeatures.append(
+                        constantColumnFeatures[constantOrderedColumn]
                     )
 
+                elif constantOrderedColumn == "Concentration":
+                    concentrationColumn = copy.deepcopy(
+                        constantColumnFeatures[constantOrderedColumn]
+                    )
+                    concentrationColumn["columnHeader"] = (
+                        constantColumnFeatures[constantOrderedColumn]["columnHeader"]
+                        + ' ('
+                        + samples[0]['concentrationUnits']
+                        + ')'
+                    )
+                    responseColumnFeatures.append(concentrationColumn)
+
+                elif constantOrderedColumn == "TotalMass":
+                    massColumn = copy.deepcopy(
+                        constantColumnFeatures[constantOrderedColumn]
+                    )
+                    if samples[0]['concentrationUnits'].lower() == "ng/ul":
+
+                        massColumn["columnHeader"] = (
+                            constantColumnFeatures[constantOrderedColumn][
+                                "columnHeader"
+                            ]
+                            + ' (ng)'
+                        )
+                    if samples[0]['concentrationUnits'].lower() == "nm":
+
+                        massColumn["columnHeader"] = (
+                            constantColumnFeatures[constantOrderedColumn][
+                                "columnHeader"
+                            ]
+                            + ' (fmole)'
+                        )
+                    responseColumnFeatures.append(massColumn)
+
+                else:
+                    responseColumnFeatures.append(
+                        constantColumnFeatures[constantOrderedColumn]
+                    )
+
+        # go through samples to format for FE and handsontable
         for sample in samples:
             responseSample = {}
+            # samples can be selected to be hidden in LIMS
             if "hideFromSampleQC" in sample and sample["hideFromSampleQC"] == True:
                 continue
-            for orderedColumn in order:
 
-                formatted_ordered_col = orderedColumn[0].lower() + orderedColumn[1:]
-                try:
-                    dataFieldName = columnFeatures[orderedColumn]["data"]
-                    if formatted_ordered_col in sample:
-                        orderedSample = sample[formatted_ordered_col]
+            if reportTable == "attachments":
+                responseSample["action"] = (
+                    "<div record-id='"
+                    + str(sample['recordId'])
+                    + "' file-name='"
+                    + str(sample['fileName'])
+                    + "' class ='download-icon'><i class=%s>%s</i></div>"
+                    % ("material-icons", "cloud_download")
+                )
 
-                        if orderedColumn == "IgoQcRecommendation":
+            for datafield in sample:
+                datafield_formatted = datafield[0].upper() + datafield[1:]
+                sample_field_value = sample[datafield]
 
-                            recommendation = sample[
-                                orderedColumn[0].lower() + orderedColumn[1:]
-                            ].lower()
-                            responseSample[dataFieldName] = "<div class=%s>%s</div>" % (
-                                recommendation,
-                                orderedSample,
+                if datafield_formatted in order:
+                    if datafield == "igoQcRecommendation":
+                        recommendation = sample_field_value
+
+                        responseSample[datafield] = "<div class=%s>%s</div>" % (
+                            recommendation.lower(),
+                            recommendation,
+                        )
+                    # round measurments to 1 decimal
+                    elif datafield in [
+                        "concentration",
+                        "totalMass",
+                        "rin",
+                        "din",
+                        "dV200",
+                    ]:
+                        if sample_field_value:
+                            responseSample[datafield] = round(
+                                float(sample_field_value), 1
                             )
-                        elif (
-                            orderedColumn == "Concentration"
-                            or orderedColumn == "TotalMass"
-                            or orderedColumn == "Rin"
-                            or orderedColumn == "Din"
-                            or orderedColumn == "DV200"
-                        ):
-                            if orderedSample:
-                                responseSample[dataFieldName] = round(
-                                    float(orderedSample), 1
-                                )
-                        elif orderedColumn == "Volume" or orderedColumn == "AvgSize":
-                            if orderedSample:
-                                responseSample[dataFieldName] = round(
-                                    float(orderedSample), 0
-                                )
+                    elif datafield == "volume" or datafield == "avgSize":
+                        if sample_field_value:
+                            responseSample[datafield] = round(
+                                float(sample_field_value), 0
+                            )
+                    elif datafield == "action":
+                        responseSample[datafield] = (
+                            "<div class ='download-icon'><i class=%s>%s</i></div>"
+                            % ("material-icons", "cloud_download")
+                        )
+                    elif datafield == "sampleStatus":
+                        responseSample[datafield] = "<div class=%s>%s</div>" % (
+                            'pathology-status',
+                            sample_field_value,
+                        )
+                    #  investigator decisions will be overwritten by non-empty lims decisions
+                    elif datafield == "investigatorDecision":
+                        if datafield in sample and sample_field_value:
+                            responseSample[datafield] = sample_field_value
+                        else:
+                            if decisions:
+                                for decision_record in decisions:
+                                    for decision in ast.literal_eval(
+                                        decision_record.decisions
+                                    ):
+                                        for decided_sample in decision["samples"]:
+                                            if (
+                                                (
+                                                    sample["recordId"]
+                                                    == decided_sample["recordId"]
+                                                )
+                                                and 
+                                                    "investigatorDecision"
+                                                in decided_sample
+                                            ):
+                                                print(
+                                                    decided_sample[
+                                                        "investigatorDecision"
+                                                    ]
+                                                )
+                                                responseSample[datafield] = str(
+                                                    decided_sample[
+                                                        "investigatorDecision"
+                                                    ]
+                                                )
 
-                        elif orderedColumn == "Action":
-                            responseSample[dataFieldName] = (
-                                "<div class ='download-icon'><i class=%s>%s</i></div>"
-                                % ("material-icons", "cloud_download")
-                            )
-                        elif orderedColumn == "SampleStatus":
-                            responseSample[dataFieldName] = "<div class=%s>%s</div>" % (
-                                'pathology-status',
-                                orderedSample,
-                            )
-                        elif orderedColumn == "InvestigatorDecision":
-                            # print(sample)
-                            if dataFieldName in sample:
-                                responseSample[dataFieldName] = orderedSample
                             else:
-                                responseSample[dataFieldName] = None
-                        else:
-
-                            responseSample[dataFieldName] = orderedSample
-
+                                responseSample[datafield] = None
                     else:
-                        if orderedColumn == "Action":
-                            responseSample[dataFieldName] = (
-                                "<div record-id='"
-                                + str(sample['recordId'])
-                                + "' file-name='"
-                                + str(sample['fileName'])
-                                + "' class ='download-icon'><i class=%s>%s</i></div>"
-                                % ("material-icons", "cloud_download")
-                            )
-                        else:
-                            responseSample[dataFieldName] = ""
-                except:
-                    print(traceback.print_exc())
-                    # print(sample)
-                    # Excpected column not found in LIMS result, return it to FE anyway.
-                    responseSample[dataFieldName] = ""
+                        responseSample[datafield] = sample_field_value
+                # if value/column was not returned in LIMS but expected by our order, present it empty
+                # it will have still been added to the columns
+
+                # else:
+                #     responseSample[datafield] = ""
             responseSamples.append(responseSample)
+        # generate handsontable header object
+        for column in responseColumnFeatures:
+            responseHeaders.append(column["columnHeader"])
 
         return {
             "data": responseSamples,
-            "columnFeatures": responseColumns,
+            "columnFeatures": responseColumnFeatures,
             "columnHeaders": responseHeaders,
         }
+
+
+def get_decisions_for_request(request_id):
+    decisions_response = []
+    decisions = Decision.query.filter_by(request_id=request_id, is_submitted=False)
+    # for x in decisions:
+    #     decisions_response.append(x.serialize)
+    return decisions
 
 
 def build_pending_list(pendings):
@@ -578,9 +688,8 @@ def build_pending_list(pendings):
         responsePending["report"] = pending.report
         responsePending["author"] = pending.author
         responsePending["recipients"] = (
-            "<div class='recipients-col'>"
-            + pending.recipients.replace(',', ',\n')
-            + "</div>"
+            "<div class='recipients-col'>%s</div>"
+            % pending.recipients.replace(',', ',\n')
         )
         responsePending["lab_notifications"] = 0
         responsePending["pm_notifications"] = 0
@@ -692,7 +801,6 @@ def get_picklist(listname):
             picklist.append(value)
         uwsgi.cache_set(listname, pickle.dumps(picklist), 900)
         return pickle.loads(uwsgi.cache_get(listname))
-    # return picklist
 
 
 def tmp_file_exists(file_name):
@@ -701,37 +809,17 @@ def tmp_file_exists(file_name):
 
 # returns true if user is associated with request as recipient
 # returns false if request has no inital comment OR user is not associated
-def is_user_authorized_for_request(request_id, username):
+def is_user_authorized_for_request(request_id, user):
     commentrelations = CommentRelation.query.filter_by(request_id=request_id)
     for relation in commentrelations:
-        if username in relation.recipients or username in relation.author:
+        # username listed specifically
+        if user.username in relation.recipients or user.username in relation.author:
             return True
+        # one of user's groups listed
+        for recipient in relation.recipients.split(","):
+            if re.sub("@mskcc.org", "", recipient) in user.groups:
+                return True
     return False
-
-
-# def save_decision(decisions, request_id, username):
-#     try:
-#         user = User.query.filter_by(username=username).first()
-
-#         decision_to_save = Decision(
-#             decisions=json.dumps(decisions),
-#             request_id=request_id,
-#             report=report,
-#             date_created=datetime.now(),
-#             date_updated=datetime.now(),
-#         )
-
-#         user.decisions.append(decision_to_save)
-#         comment_relation.decisions.append(decision_to_save)
-
-#         db.session.commit()
-#         return decision_to_save
-#     except:
-#         print(traceback.print_exc())
-
-#         return None
-
-#     return None
 
 
 # iterate over lims returned investigator decisions, set column to be editable if at least one decision is unfilled

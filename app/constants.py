@@ -72,7 +72,7 @@ sharedColumns = {
     "Volume": {
         "limsField": "Volume",
         "data": "volume",
-        "columnHeader": "Volume (ul)",
+        "columnHeader": "Volume (uL)",
         "readOnly": "true",
     },
     "TotalMass": {
@@ -157,7 +157,7 @@ libraryColumns = {
     "AvgSize": {
         "limsField": "AvgSize",
         "data": "avgSize",
-        "columnHeader": "Average Size",
+        "columnHeader": "Average Size (bp)",
         "readOnly": "true",
     },
     "TumorOrNormal": {
