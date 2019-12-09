@@ -13,10 +13,17 @@ ENV = app.config["ENV"]
 
 
 def send_decision_notification(decision, decision_user, recipients, initial_author):
-    receiver_email = (
-        "wagnerl@mskcc.org,patrunoa@mskcc.org," + initial_author + "@mskcc.org"
-    )
+    if ENV == 'development':
+
+        recipients = [
+            "wagnerl@mskcc.org",
+            "patrunoa@mskcc.org",
+            initial_author + "@mskcc.org",
+        ]
+        recipients = set(recipients)
+
     # receiver_email = recipients
+    print(recipients, "send_decision_notification")
     sender_email = NOTIFICATION_SENDER
     # print(receiver_email.split(","))
 
@@ -25,29 +32,36 @@ def send_decision_notification(decision, decision_user, recipients, initial_auth
     content = (
         template["body"] % (decision.request_id, decision_user.full_name)
         + template["footer"]
-        + "<br><br>In production, this email would have been sent to:"
-        + ", ".join(recipients)
+        # + "<br><br>In production, this email would have been sent to:"
+        # + ", ".join(recipients)
     )
     msg = MIMEText(content, "html")
     msg['Subject'] = template["subject"] % decision.request_id
 
     msg['From'] = sender_email
-    msg['To'] = receiver_email
+    msg['To'] = ', '.join(recipients)
 
     # Send the message via our own SMTP server.
     s = smtplib.SMTP('localhost')
     # .sendmail(sender_email, receiver_email, message.as_string())
     # if ENV = development
-    s.sendmail(sender_email, receiver_email.split(","), msg.as_string())
+    s.sendmail(sender_email, recipients, msg.as_string())
     s.close()
     log_info(msg.as_string(), decision_user.username)
     return "done"
 
 
 def send_initial_notification(recipients, request_id, report, author):
-    receiver_email = (
-        "wagnerl@mskcc.org,patrunoa@mskcc.org," + author.username + "@mskcc.org"
-    )
+    if ENV == 'development':
+
+        recipients = [
+            "wagnerl@mskcc.org",
+            "patrunoa@mskcc.org",
+            author.username + "@mskcc.org",
+        ]
+        recipients = set(recipients)
+
+    print(recipients, "send_initial_notification")
     # receiver_email = recipients
     sender_email = NOTIFICATION_SENDER
     # print(receiver_email.split(","))
@@ -61,50 +75,56 @@ def send_initial_notification(recipients, request_id, report, author):
     msg['Subject'] = template["subject"] % request_id
 
     msg['From'] = sender_email
-    msg['To'] = receiver_email
+    msg['To'] = ", ".join(recipients)
 
     # Send the message via our own SMTP server.
     s = smtplib.SMTP('localhost')
     # .sendmail(sender_email, receiver_email, message.as_string())
     # if ENV = development
-    s.sendmail(sender_email, receiver_email.split(","), msg.as_string())
+    s.sendmail(sender_email, recipients, msg.as_string())
     s.close()
     print(msg.as_string())
     return "done"
 
 
 def send_notification(recipients, comment, request_id, report, author):
-    receiver_email = (
-        "wagnerl@mskcc.org,patrunoa@mskcc.org," + author.username + "@mskcc.org"
-    )
+    if ENV == 'development':
+
+        recipients = [
+            "wagnerl@mskcc.org",
+            "patrunoa@mskcc.org",
+            author.username + "@mskcc.org",
+        ]
+        recipients = set(recipients)
+
     # receiver_email = recipients
     sender_email = NOTIFICATION_SENDER
     # print(receiver_email.split(","))
 
     template = constants.notification_email_template_html
-
-    print(recipients)
+    print(recipients, "send_notification")
+    # print(recipients)
     name = author.full_name
 
     content = (
         template["body"] % (report.split(' ')[0], request_id, comment["content"])
         + template["footer"] % (name, author.title)
-        + "<br><br>In production, this email would have been sent to:"
-        + ", ".join(recipients)
+        # + "<br><br>In production, this email would have been sent to:"
+        # + ", ".join(recipients)
     )
     msg = MIMEText(content, "html")
     msg['Subject'] = template["subject"] % request_id
 
     msg['From'] = sender_email
-    msg['To'] = receiver_email
+    msg['To'] = ', '.join(recipients)
 
     # # # Send the message via our own SMTP server.
     s = smtplib.SMTP('localhost')
     # .sendmail(sender_email, receiver_email, message.as_string())
     # if ENV = development
-    s.sendmail(sender_email, receiver_email.split(","), msg.as_string())
+    s.sendmail(sender_email, recipients, msg.as_string())
     s.close()
-    print(msg.as_string())
+    print(msg)
     return "done"
 
 

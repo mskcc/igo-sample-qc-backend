@@ -297,11 +297,13 @@ def set_qc_investigator_decision():
     payload = request.get_json()
 
     username = payload["username"]
+    print(username)
     decisions = payload["decisions"]
     request_id = payload["request_id"]
     report = payload["report"]
     try:
         decision_user = User.query.filter_by(username=username).first()
+        # print(decision_user)
         comment_relation = CommentRelation.query.filter(
             and_(
                 CommentRelation.request_id == request_id,
