@@ -95,29 +95,29 @@ def add_and_notify():
             comment_relation,
         )
 
-        print(recipients)
+        # print(recipients)
         # if saving worked
         if recipients:
             if user.role == "lab_member":
                 recipients = recipients.split(",")
-                # notify.send_notification(
-                #     set(recipients),
-                #     payload["comment"],
-                #     payload["request_id"],
-                #     payload["report"],
-                #     user,
-                # )
+                notify.send_notification(
+                    set(recipients),
+                    payload["comment"],
+                    payload["request_id"],
+                    payload["report"],
+                    user,
+                )
             else:
                 # if a non-lab member comments, notify intial comments author
                 recipients = recipients + "," + comment_relation.author + "@mskcc.org"
                 recipients = recipients.split(",")
-                # notify.send_notification(
-                #     set(recipients),
-                #     payload["comment"],
-                #     payload["request_id"],
-                #     payload["report"],
-                #     user,
-                # )
+                notify.send_notification(
+                    set(recipients),
+                    payload["comment"],
+                    payload["request_id"],
+                    payload["report"],
+                    user,
+                )
 
     except:
         print(traceback.print_exc())
@@ -300,9 +300,9 @@ def save_initial_comment_and_relation(
             date_created=datetime.now(),
             date_updated=datetime.now(),
         )
-        print(comment_relation.serialize)
+        # print(comment_relation.serialize)
         db.session.add(comment_relation)
-    print(comment)
+    # print(comment)
 
     comment = Comment(
         comment=comment["content"],
