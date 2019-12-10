@@ -54,7 +54,7 @@ def add_and_notify_initial():
             if recipients:
 
                 notify.send_initial_notification(
-                    recipients, payload["request_id"], report, user
+                     set(recipients.split(',')), payload["request_id"], report, user
                 )
             else:
                 responseObject = {'message': "Failed to save comment"}
