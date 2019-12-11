@@ -334,7 +334,7 @@ notification_email_template_html = {
 
 decision_notification_email_template_html = {
     "from": "igoski@mskcc.org",
-    "subject": "[SampleQC Beta-Test] %s Decisions Submitted",
+    "subject": "[SampleQC Beta-Test] %s Decisions Submitted for %s",
     "body": "Hello,<br><br>Decisions have been submitted for project %s by %s.<br><br><span style='font-weight:bold;'> To make any changes to the decisions, please reach out to IGO at zzPDL_CMO_IGO@mskcc.org.</span><br><br>Thank you,",
     "footer": "<br><a style='color:#f29934; font-weight:bold;' href='http://cmo.mskcc.org/cmo/igo/'>Integrated Genomics Operation</a><br><a href='https://www.mskcc.org'>Memorial Sloan Kettering Cancer Center</a><br>T 646.888.3765<br>Follow us on <a href='https://www.instagram.com/genomics212/?hl=en'>Instagram</a> and <a href='https://twitter.com/genomics212?lang=en'>Twitter</a>!<br>",
 }
