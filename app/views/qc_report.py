@@ -46,6 +46,8 @@ LIMS_API_ROOT = app.config["LIMS_API_ROOT"]
 LIMS_USER = app.config["LIMS_USER"]
 LIMS_PW = app.config["LIMS_PW"]
 TMP_FOLDER = app.config["TMP_FOLDER"]
+PM_EMAIL_LIST = app.config["PM_EMAIL_LIST"]
+PM_ZZPDL = app.config["PM_ZZPDL"]
 
 
 qc_report = Blueprint("qc_report", __name__)
@@ -633,8 +635,7 @@ def build_table(reportTable, samples, constantColumnFeatures, order, decisions=N
                                                     sample["recordId"]
                                                     == decided_sample["recordId"]
                                                 )
-                                                and 
-                                                    "investigatorDecision"
+                                                and "investigatorDecision"
                                                 in decided_sample
                                             ):
                                                 print(
@@ -816,6 +817,10 @@ def is_user_authorized_for_request(request_id, user):
     for relation in commentrelations:
         # username listed specifically
         if user.username in relation.recipients or user.username in relation.author:
+            return True
+        # user is PM and skicmopm recipient (PMs do not use zzPDLs for this to be able to communicate
+        # with outside invastigators
+        if PM_EMAIL_LIST in relation.recipients and PM_ZZPDL in user.groups:
             return True
         # one of user's groups listed
         for recipient in relation.recipients.split(","):

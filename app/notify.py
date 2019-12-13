@@ -80,7 +80,7 @@ def send_initial_notification(recipients, request_id, report, author):
     s = smtplib.SMTP('localhost')
     # .sendmail(sender_email, receiver_email, message.as_string())
     # if ENV = development
-    # s.sendmail(sender_email, recipients, msg.as_string())
+    s.sendmail(sender_email, recipients, msg.as_string())
     s.close()
     print(msg.as_string())
     return "done"
