@@ -107,7 +107,7 @@ def send_notification(recipients, comment, request_id, report, author):
 
     content = (
         template["body"] % (report.split(' ')[0], request_id, comment["content"])
-        + template["footer"] % (name, author.title)
+        + template["footer"]
         # + "<br><br>In production, this email would have been sent to:"
         # + ", ".join(recipients)
     )
