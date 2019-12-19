@@ -160,7 +160,7 @@ def add_to_all_and_notify():
             if recipients:
                 if user.role == "lab_member":
                     recipients = (
-                        recipients + "," + comment_relation.author + "@mskcc.org"
+                        recipients + "," + payload["comment"]["author"] + "@mskcc.org"
                     )
                     recipients = recipients.split(",")
                     notify.send_notification(
