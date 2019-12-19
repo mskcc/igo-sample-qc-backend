@@ -89,13 +89,25 @@ def send_initial_notification(recipients, request_id, report, author):
 def send_notification(recipients, comment, request_id, report, author):
     if ENV == 'development':
 
+        content = (
+            template["body"] % (report.split(' ')[0], request_id, comment["content"])
+            + template["footer"]
+            + "<br><br>In production, this email would have been sent to:"
+            + ", ".join(recipients)
+        )
         recipients = [
             "wagnerl@mskcc.org",
             "patrunoa@mskcc.org",
             author.username + "@mskcc.org",
         ]
         recipients = set(recipients)
-
+    else:
+        content = (
+            template["body"] % (report.split(' ')[0], request_id, comment["content"])
+            + template["footer"]
+            # + "<br><br>In production, this email would have been sent to:"
+            # + ", ".join(recipients)
+        )
     # receiver_email = recipients
     sender_email = NOTIFICATION_SENDER
     # print(receiver_email.split(","))
@@ -105,12 +117,6 @@ def send_notification(recipients, comment, request_id, report, author):
     # print(recipients)
     name = author.full_name
 
-    content = (
-        template["body"] % (report.split(' ')[0], request_id, comment["content"])
-        + template["footer"] % (name, author.title)
-        # + "<br><br>In production, this email would have been sent to:"
-        # + ", ".join(recipients)
-    )
     msg = MIMEText(content, "html")
     msg['Subject'] = template["subject"] % request_id
 

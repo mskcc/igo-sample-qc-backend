@@ -100,8 +100,10 @@ def add_and_notify():
         if recipients:
             if user.role == "lab_member":
                 recipients = recipients.split(",")
+                recipients = set(recipients)
+                recipients.remove("zzPDL_CMO_IGO@mskcc.org")
                 notify.send_notification(
-                    set(recipients),
+                    recipients,
                     payload["comment"],
                     payload["request_id"],
                     payload["report"],
