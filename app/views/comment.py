@@ -54,7 +54,7 @@ def add_and_notify_initial():
             if recipients:
 
                 notify.send_initial_notification(
-                     set(recipients.split(',')), payload["request_id"], report, user
+                    set(recipients.split(',')), payload["request_id"], report, user
                 )
             else:
                 responseObject = {'message': "Failed to save comment"}
@@ -99,9 +99,12 @@ def add_and_notify():
         # if saving worked
         if recipients:
             if user.role == "lab_member":
+                recipients = (
+                    recipients + "," + payload["comment"]["username"] + "@mskcc.org"
+                )
                 recipients = recipients.split(",")
                 recipients = set(recipients)
-                recipients.remove("zzPDL_CMO_IGO@mskcc.org")
+                recipients.discard("zzPDL_CMO_IGO@mskcc.org")
                 notify.send_notification(
                     recipients,
                     payload["comment"],
@@ -159,9 +162,6 @@ def add_to_all_and_notify():
             )
             if recipients:
                 if user.role == "lab_member":
-                    recipients = (
-                        recipients + "," + payload["comment"]["author"] + "@mskcc.org"
-                    )
                     recipients = recipients.split(",")
                     notify.send_notification(
                         set(recipients),
@@ -331,10 +331,8 @@ def save_initial_comment_and_relation(
                 date_created=datetime.now(),
                 date_updated=datetime.now(),
             )
-            user.decisions.append(decision)    
+            user.decisions.append(decision)
             comment_relation.decision.append(decision)
-
-        
 
         db.session.commit()
     except:
