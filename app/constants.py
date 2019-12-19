@@ -329,7 +329,7 @@ notification_email_template_html = {
     "from": "igoski@mskcc.org",
     "subject": "[SampleQC Beta-Test] %s New Comment",
     "body": "Hello,<br><br>The following comment has been added to %s QC on project %s by IGO.<br><br>\"%s\"<br><br>Please proceed to <a href='https://igo.mskcc.org/sample-qc'>igo.mskcc.og/sample-qc</a> and search for your project if you would like to reply.<br><br>Thank you,",
-    "footer": "<br><span style='color:#f29934; font-weight:bold;'>%s</span><br>%s<br><a href='http://cmo.mskcc.org/cmo/igo/'>Integrated Genomics Operation</a><br><a href='https://www.mskcc.org'>Memorial Sloan Kettering Cancer Center</a><br>T 646.888.3765<br>Follow us on <a href='https://www.instagram.com/genomics212/?hl=en'>Instagram</a> and <a href='https://twitter.com/genomics212?lang=en'>Twitter</a>!<br>",
+    "footer": "<br><a href='http://cmo.mskcc.org/cmo/igo/'>Integrated Genomics Operation</a><br><a href='https://www.mskcc.org'>Memorial Sloan Kettering Cancer Center</a><br>T 646.888.3765<br>Follow us on <a href='https://www.instagram.com/genomics212/?hl=en'>Instagram</a> and <a href='https://twitter.com/genomics212?lang=en'>Twitter</a>!<br>",
 }
 
 decision_notification_email_template_html = {

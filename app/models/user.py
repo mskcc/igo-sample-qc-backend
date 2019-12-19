@@ -105,11 +105,11 @@ class User(db.Model):
         result = conn.search_s(
             'DC=MSKCC,DC=ROOT,DC=MSKCC,DC=ORG',
             ldap.SCOPE_SUBTREE,
-            'sAMAccountName=' + username,
+            'sAMAccountName=' + "savinc",
             attrs,
         )
         # if you want to see what comes back in the terminal
-
+        print(result)
         conn.unbind_s()
         return result
 
