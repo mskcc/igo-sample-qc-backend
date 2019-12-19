@@ -87,6 +87,7 @@ def send_initial_notification(recipients, request_id, report, author):
 
 
 def send_notification(recipients, comment, request_id, report, author):
+    template = constants.notification_email_template_html
     if ENV == 'development':
 
         content = (
@@ -112,7 +113,7 @@ def send_notification(recipients, comment, request_id, report, author):
     sender_email = NOTIFICATION_SENDER
     # print(receiver_email.split(","))
 
-    template = constants.notification_email_template_html
+    
     print(recipients, "send_notification")
     # print(recipients)
     name = author.full_name
