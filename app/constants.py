@@ -315,7 +315,7 @@ user_pending_order = [
 initial_email_template_html = {
     "from": "igoski@mskcc.org",
     "subject": "[SampleQC Beta-Test] %s %s QC results available%s",
-    "body": "Hello,<br><br>IGO has completed %s QC on project %s. <br><br>Please proceed to <a href='https://igo.mskcc.org/sample-qc'>igo.mskcc.og/sample-qc</a> and search the Request ID to ask any questions, download related documents, and to indicate which sample(s) should continue with processing.<br><br>Thank you,",
+    "body": "Hello,<br><br>IGO has completed %s QC on project %s. <br><br>Please proceed to <a href='https://igodev.mskcc.org/sample-qc/report/%s'>igo.mskcc.org/sample-qc/report/%s</a> to ask any questions, download related documents, and to indicate which sample(s) should continue with processing.<br><br>Thank you,",
     "footer": "<br><br><span style='color:#f29934; font-weight:bold;'>%s</span><br>%s<br><a href='http://cmo.mskcc.org/cmo/igo/'>Integrated Genomics Operation</a><br><a href='https://www.mskcc.org'>Memorial Sloan Kettering Cancer Center</a><br>T 646.888.3765<br>Follow us on <a href='https://www.instagram.com/genomics212/?hl=en'>Instagram</a> and <a href='https://twitter.com/genomics212?lang=en'>Twitter</a>!<br>",
 }
 # notification_email_template = {
@@ -328,13 +328,13 @@ initial_email_template_html = {
 notification_email_template_html = {
     "from": "igoski@mskcc.org",
     "subject": "[SampleQC Beta-Test] %s New Comment",
-    "body": "Hello,<br><br>The following comment has been added to %s QC on project %s by %s.<br><br>\"%s\"<br><br>Please proceed to <a href='https://igo.mskcc.org/sample-qc'>igo.mskcc.og/sample-qc</a> and search the Request ID if you would like to reply.<br><br>Thank you,",
+    "body": "Hello,<br><br>The following comment has been added to %s QC on project %s by %s.<br><br>\"%s\"<br><br>Please proceed to <a href='https://igodev.mskcc.org/sample-qc/report/%s'>igo.mskcc.org/sample-qc/report/%s</a> if you would like to reply.<br><br>Thank you,",
     "footer": "<br><a href='http://cmo.mskcc.org/cmo/igo/'>Integrated Genomics Operation</a><br><a href='https://www.mskcc.org'>Memorial Sloan Kettering Cancer Center</a><br>T 646.888.3765<br>Follow us on <a href='https://www.instagram.com/genomics212/?hl=en'>Instagram</a> and <a href='https://twitter.com/genomics212?lang=en'>Twitter</a>!<br>",
 }
 
 decision_notification_email_template_html = {
     "from": "igoski@mskcc.org",
     "subject": "[SampleQC Beta-Test] %s Decisions Submitted for %s",
-    "body": "Hello,<br><br>Decisions have been submitted for project %s by %s.<br><br><span style='font-weight:bold;'> To make any changes to the decisions, please reach out to IGO at zzPDL_CMO_IGO@mskcc.org.</span><br><br>Thank you,",
+    "body": "Hello,<br><br>Decisions have been submitted for project %s by %s.<br><br><span style='font-weight:bold;'> To make any changes to the decisions, please reach out to IGO at zzPDL_CMO_IGO@mskcc.org.</span><br>You can find the project at <a href='https://igodev.mskcc.org/sample-qc/report/%s'>igo.mskcc.org/sample-qc/report/%s</a>.<br>Thank you,",
     "footer": "<br><a style='color:#f29934; font-weight:bold;' href='http://cmo.mskcc.org/cmo/igo/'>Integrated Genomics Operation</a><br><a href='https://www.mskcc.org'>Memorial Sloan Kettering Cancer Center</a><br>T 646.888.3765<br>Follow us on <a href='https://www.instagram.com/genomics212/?hl=en'>Instagram</a> and <a href='https://twitter.com/genomics212?lang=en'>Twitter</a>!<br>",
 }

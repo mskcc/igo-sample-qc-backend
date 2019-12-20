@@ -16,7 +16,13 @@ def send_decision_notification(decision, decision_user, recipients, initial_auth
     template = constants.decision_notification_email_template_html
     if ENV == 'development':
         content = (
-            template["body"] % (decision.request_id, decision_user.full_name)
+            template["body"]
+            % (
+                decision.request_id,
+                decision_user.full_name,
+                decision.request_id,
+                decision.request_id,
+            )
             + template["footer"]
             + "<br><br>In production, this email would have been sent to:"
             + ", ".join(recipients)
@@ -29,7 +35,13 @@ def send_decision_notification(decision, decision_user, recipients, initial_auth
         recipients = set(recipients)
     else:
         content = (
-            template["body"] % (decision.request_id, decision_user.full_name)
+            template["body"]
+            % (
+                decision.request_id,
+                decision_user.full_name,
+                decision.request_id,
+                decision.request_id,
+            )
             + template["footer"]
         )
     # receiver_email = recipients
@@ -56,7 +68,8 @@ def send_initial_notification(recipients, request_id, report, author, is_decided
 
     if ENV == 'development':
         content = (
-            template["body"] % (report.split(' ')[0], request_id)
+            template["body"]
+            % (report.split(' ')[0], request_id, request_id, request_id)
             + template["footer"] % (author.full_name, author.title)
             + "<br><br>In production, this email would have been sent to:"
             + ", ".join(recipients)
@@ -70,9 +83,12 @@ def send_initial_notification(recipients, request_id, report, author, is_decided
 
         recipients = set(recipients)
     else:
-        content = template["body"] % (report.split(' ')[0], request_id) + template[
-            "footer"
-        ] % (author.full_name, author.title)
+        content = template["body"] % (
+            report.split(' ')[0],
+            request_id,
+            request_id,
+            request_id,
+        ) + template["footer"] % (author.full_name, author.title)
     msg = MIMEText(content, "html")
 
     if is_decided:
@@ -102,7 +118,14 @@ def send_notification(recipients, comment, request_id, report, author):
     if ENV == 'development':
         content = (
             template["body"]
-            % (report.split(' ')[0], request_id, author.full_name, comment["content"])
+            % (
+                report.split(' ')[0],
+                request_id,
+                author.full_name,
+                comment["content"],
+                request_id,
+                request_id,
+            )
             + template["footer"]
             + "<br><br>In production, this email would have been sent to:"
             + ", ".join(recipients)
@@ -116,7 +139,14 @@ def send_notification(recipients, comment, request_id, report, author):
     else:
         content = (
             template["body"]
-            % (report.split(' ')[0], request_id, author.full_name, comment["content"])
+            % (
+                report.split(' ')[0],
+                request_id,
+                author.full_name,
+                comment["content"],
+                request_id,
+                request_id,
+            )
             + template["footer"]
         )
     sender_email = NOTIFICATION_SENDER
