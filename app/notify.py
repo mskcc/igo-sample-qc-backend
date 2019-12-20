@@ -51,14 +51,16 @@ def send_decision_notification(decision, decision_user, recipients, initial_auth
     return "done"
 
 
-def send_initial_notification(recipients, request_id, report, author):
+def send_initial_notification(recipients, request_id, report, author, is_decided):
     template = constants.initial_email_template_html
+
     if ENV == 'development':
-        content = template["body"] % (report.split(' ')[0], request_id) + template[
-            "footer"
-        ] % (author.full_name, author.title)
-        +"<br><br>In production, this email would have been sent to:"
-        +", ".join(recipients)
+        content = (
+            template["body"] % (report.split(' ')[0], request_id)
+            + template["footer"] % (author.full_name, author.title)
+            + "<br><br>In production, this email would have been sent to:"
+            + ", ".join(recipients)
+        )
 
         recipients = [
             "wagnerl@mskcc.org",
@@ -71,11 +73,14 @@ def send_initial_notification(recipients, request_id, report, author):
         content = template["body"] % (report.split(' ')[0], request_id) + template[
             "footer"
         ] % (author.full_name, author.title)
+    msg = MIMEText(content, "html")
+
+    if is_decided:
+        msg['Subject'] = template["subject"] % (request_id, "Decisions made by IGO")
+    else:
+        msg['Subject'] = template["subject"] % (request_id, "Pending further action")
     # print(recipients, "send_initial_notification")
     sender_email = NOTIFICATION_SENDER
-
-    msg = MIMEText(content, "html")
-    msg['Subject'] = template["subject"] % request_id
 
     msg['From'] = sender_email
     msg['To'] = ", ".join(recipients)
