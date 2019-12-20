@@ -76,9 +76,13 @@ def send_initial_notification(recipients, request_id, report, author, is_decided
     msg = MIMEText(content, "html")
 
     if is_decided:
-        msg['Subject'] = template["subject"] % (request_id, "Decisions made by IGO")
+        msg['Subject'] = template["subject"] % (request_id, report.split(' ')[0], "")
     else:
-        msg['Subject'] = template["subject"] % (request_id, "Pending further action")
+        msg['Subject'] = template["subject"] % (
+            request_id,
+            report.split(' ')[0],
+            ", Pending further action",
+        )
     # print(recipients, "send_initial_notification")
     sender_email = NOTIFICATION_SENDER
 
@@ -87,7 +91,7 @@ def send_initial_notification(recipients, request_id, report, author, is_decided
 
     # Send the message via our own SMTP server.
     s = smtplib.SMTP('localhost')
-    s.sendmail(sender_email, recipients, msg.as_string())
+    # s.sendmail(sender_email, recipients, msg.as_string())
     s.close()
     log_info(msg.as_string(), author.username)
     return "done"
