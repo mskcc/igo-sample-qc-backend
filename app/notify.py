@@ -13,27 +13,30 @@ ENV = app.config["ENV"]
 
 
 def send_decision_notification(decision, decision_user, recipients, initial_author):
+    template = constants.decision_notification_email_template_html
     if ENV == 'development':
-
+        content = (
+            template["body"] % (decision.request_id, decision_user.full_name)
+            + template["footer"]
+            + "<br><br>In production, this email would have been sent to:"
+            + ", ".join(recipients)
+        )
         recipients = [
             "wagnerl@mskcc.org",
             "patrunoa@mskcc.org",
             initial_author + "@mskcc.org",
         ]
         recipients = set(recipients)
+    else:
+        content = (
+            template["body"] % (decision.request_id, decision_user.full_name)
+            + template["footer"]
+        )
     # receiver_email = recipients
-    print(recipients, "send_decision_notification")
+    # print(recipients, "send_decision_notification")
     sender_email = NOTIFICATION_SENDER
     # print(receiver_email.split(","))
 
-    template = constants.decision_notification_email_template_html
-
-    content = (
-        template["body"] % (decision.request_id, decision_user.full_name)
-        + template["footer"]
-        # + "<br><br>In production, this email would have been sent to:"
-        # + ", ".join(recipients)
-    )
     msg = MIMEText(content, "html")
     msg['Subject'] = template["subject"] % (decision.request_id, decision.report)
 
@@ -42,8 +45,6 @@ def send_decision_notification(decision, decision_user, recipients, initial_auth
 
     # Send the message via our own SMTP server.
     s = smtplib.SMTP('localhost')
-    # .sendmail(sender_email, receiver_email, message.as_string())
-    # if ENV = development
     s.sendmail(sender_email, recipients, msg.as_string())
     s.close()
     log_info(msg.as_string(), decision_user.username)
@@ -51,12 +52,13 @@ def send_decision_notification(decision, decision_user, recipients, initial_auth
 
 
 def send_initial_notification(recipients, request_id, report, author):
+    template = constants.initial_email_template_html
     if ENV == 'development':
-        # content = template["body"] % (report.split(' ')[0], request_id) + template[
-        #     "footer"
-        # ] % (name, author.title)
-        # +"<br><br>In production, this email would have been sent to:"
-        # +", ".join(recipients)
+        content = template["body"] % (report.split(' ')[0], request_id) + template[
+            "footer"
+        ] % (author.full_name, author.title)
+        +"<br><br>In production, this email would have been sent to:"
+        +", ".join(recipients)
 
         recipients = [
             "wagnerl@mskcc.org",
@@ -65,14 +67,13 @@ def send_initial_notification(recipients, request_id, report, author):
         ]
 
         recipients = set(recipients)
-
+    else:
+        content = template["body"] % (report.split(' ')[0], request_id) + template[
+            "footer"
+        ] % (author.full_name, author.title)
     # print(recipients, "send_initial_notification")
     sender_email = NOTIFICATION_SENDER
-    template = constants.initial_email_template_html
-    name = author.full_name
-    content = template["body"] % (report.split(' ')[0], request_id) + template[
-        "footer"
-    ] % (name, author.title)
+
     msg = MIMEText(content, "html")
     msg['Subject'] = template["subject"] % request_id
 
@@ -81,8 +82,6 @@ def send_initial_notification(recipients, request_id, report, author):
 
     # Send the message via our own SMTP server.
     s = smtplib.SMTP('localhost')
-    # .sendmail(sender_email, receiver_email, message.as_string())
-    # if ENV = development
     s.sendmail(sender_email, recipients, msg.as_string())
     s.close()
     log_info(msg.as_string(), author.username)
