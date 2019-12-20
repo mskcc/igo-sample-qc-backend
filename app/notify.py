@@ -91,7 +91,7 @@ def send_initial_notification(recipients, request_id, report, author, is_decided
 
     # Send the message via our own SMTP server.
     s = smtplib.SMTP('localhost')
-    # s.sendmail(sender_email, recipients, msg.as_string())
+    s.sendmail(sender_email, recipients, msg.as_string())
     s.close()
     log_info(msg.as_string(), author.username)
     return "done"
