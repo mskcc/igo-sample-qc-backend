@@ -59,6 +59,18 @@ s = requests.Session()
 # queries IGO LIMS REST
 
 
+@qc_report.route("/oncoTranslate")
+def oncoTranslate():
+    codes = ["PRAD","LUNG","BREAST","PAAD","LUAD","MEL","READ","BLCA","AMLNOS","UCEC"]
+    for code in codes:
+
+
+        r = s.get(
+            "http://oncotree.mskcc.org/api/tumorTypes/search/code/" + code
+        )   
+        print(r.json()[0]["name"])
+
+
 @qc_report.route("/getRequestSamples", methods=['GET'])
 @jwt_required
 def get_request_samples():
@@ -565,6 +577,7 @@ def build_table(reportTable, samples, constantColumnFeatures, order, decisions=N
 
         # go through samples to format for FE and handsontable
         for sample in samples:
+            print(sample)
             responseSample = {}
             # samples can be selected to be hidden in LIMS
             if "hideFromSampleQC" in sample and sample["hideFromSampleQC"] == True:

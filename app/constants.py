@@ -90,10 +90,10 @@ dnaColumns = {
         "columnHeader": "DIN",
         "readOnly": "true",
     },
-    "PercentHuman": {
-        "limsField": "PercentHuman",
-        "data": "percentHuman",
-        "columnHeader": "%Human",
+    "HumanPercentage": {
+        "limsField": "HumanPercentage",
+        "data": "humanPercentage",
+        "columnHeader": "Human %",
         "readOnly": "true",
     },
     "TumorOrNormal": {
@@ -242,7 +242,7 @@ dnaOrder = [
     "TotalMass",
     "Din",
     "SpecimenType",
-    "PercentHuman",
+    "HumanPercentage",
     "TumorOrNormal",
     "Preservation",
     "RecordId",
