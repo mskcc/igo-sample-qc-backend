@@ -61,13 +61,21 @@ s = requests.Session()
 
 @qc_report.route("/oncoTranslate")
 def oncoTranslate():
-    codes = ["PRAD","LUNG","BREAST","PAAD","LUAD","MEL","READ","BLCA","AMLNOS","UCEC"]
+    codes = [
+        "PRAD",
+        "LUNG",
+        "BREAST",
+        "PAAD",
+        "LUAD",
+        "MEL",
+        "READ",
+        "BLCA",
+        "AMLNOS",
+        "UCEC",
+    ]
     for code in codes:
 
-
-        r = s.get(
-            "http://oncotree.mskcc.org/api/tumorTypes/search/code/" + code
-        )   
+        r = s.get("http://oncotree.mskcc.org/api/tumorTypes/search/code/" + code)
         print(r.json()[0]["name"])
 
 
@@ -175,6 +183,7 @@ def get_qc_report_samples():
             "Request not found or not associated with your username.", 404, None
         )
     try:
+
         # authorized in some way, fetch data
         r = s.post(
             LIMS_API_ROOT + "/getQcReportSamples",
@@ -182,6 +191,7 @@ def get_qc_report_samples():
             verify=False,
             data=data,
         )
+        # print(r.json())
 
         # if not lab member but auth'd, get commentrelations and only show reports that are ready
         if not is_lab_member and is_authorized_for_request:
@@ -229,6 +239,7 @@ def get_qc_report_samples():
                             decisions,
                         )
                         tables[field]["readOnly"] = read_only
+                        print(lims_data[field])
 
                 if field == "rnaReportSamples":
 
@@ -577,7 +588,7 @@ def build_table(reportTable, samples, constantColumnFeatures, order, decisions=N
 
         # go through samples to format for FE and handsontable
         for sample in samples:
-            print(sample)
+            # print(sample)
             responseSample = {}
             # samples can be selected to be hidden in LIMS
             if "hideFromSampleQC" in sample and sample["hideFromSampleQC"] == True:
@@ -612,6 +623,7 @@ def build_table(reportTable, samples, constantColumnFeatures, order, decisions=N
                         "rin",
                         "din",
                         "dV200",
+                        'humanPercentage'
                     ]:
                         if sample_field_value:
                             responseSample[datafield] = round(
