@@ -51,13 +51,17 @@ def add_and_notify_initial():
                 # add decisionsmade object
                 user,
             )
+            is_pathology_report = report == "Pathology Report"
             if comment_relation:
-                if (comment_relation.decision and comment_relation.decision[0].is_igo_decision):
+                if (
+                    comment_relation.decision
+                    and comment_relation.decision[0].is_igo_decision
+                ):
                     is_decided = True
                 else:
                     is_decided = False
                 notify.send_initial_notification(
-                    set(comment_relation.recipients.split(',')), payload["request_id"], report, user, is_decided
+                    set(comment_relation.recipients.split(',')), payload["request_id"], report, user, is_decided, is_pathology_report
                 )
             else:
                 responseObject = {'message': "Failed to save comment"}

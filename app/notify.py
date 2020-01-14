@@ -63,7 +63,7 @@ def send_decision_notification(decision, decision_user, recipients, initial_auth
     return "done"
 
 
-def send_initial_notification(recipients, request_id, report, author, is_decided):
+def send_initial_notification(recipients, request_id, report, author, is_decided, is_pathology_report):
     template = constants.initial_email_template_html
 
     if ENV == 'development':
@@ -91,7 +91,7 @@ def send_initial_notification(recipients, request_id, report, author, is_decided
         ) + template["footer"] % (author.full_name, author.title)
     msg = MIMEText(content, "html")
 
-    if is_decided:
+    if is_decided or is_pathology_report:
         msg['Subject'] = template["subject"] % (request_id, report.split(' ')[0], "")
     else:
         msg['Subject'] = template["subject"] % (
