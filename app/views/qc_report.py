@@ -278,6 +278,25 @@ def get_qc_report_samples():
                         )
                         tables[field]["readOnly"] = read_only
 
+                if field == "poolReportSamples":
+                    if is_lab_member or (
+                        is_authorized_for_request and "Pool Report" in reports
+                    ):
+                        read_only = is_investigator_decision_read_only(lims_data[field])
+                        libraryColumns = constants.libraryColumns
+                        libraryColumns["InvestigatorDecision"]["readOnly"] = read_only
+                        constantColumnFeatures = mergeColumns(
+                            sharedColumns, libraryColumns
+                        )
+                        tables[field] = build_table(
+                            field,
+                            lims_data[field],
+                            constantColumnFeatures,
+                            constants.libraryOrder,
+                            decisions,
+                        )
+                        tables[field]["readOnly"] = read_only
+
                 if field == "pathologyReportSamples":
                     if is_lab_member or (
                         is_authorized_for_request and "Pathology Report" in reports
