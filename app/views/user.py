@@ -65,7 +65,7 @@ def login():
         # tries logging in
         try:
             result = User.try_login(username, password)
-
+            # return make_response(jsonify(responseObject), 401, None)
         # catches invalid credentials from LDAP call in user model
         except ldap.INVALID_CREDENTIALS:
             responseObject = {
@@ -74,63 +74,63 @@ def login():
             return make_response(jsonify(responseObject), 401, None)
         # if the user is part of labmember group
         lab_member = is_lab_member(result)
+        # if lab_member:
+        full_name = get_user_fullname(result)
+        title = get_user_title(result)
+        # users are saved with their zzPDL memberships, updated on every login
         if lab_member:
-            full_name = get_user_fullname(result)
-            title = get_user_title(result)
-            # users are saved with their zzPDL memberships, updated on every login
-            if lab_member:
-                log_info('lab_member user logged in: ' + username)
-                user = load_username(
-                    username,
-                    title,
-                    full_name,
-                    "lab_member",
-                    ', '.join(format_result_zzPDL(result)),
-                )
-
-            else:
-                log_info('non_lab_member user logged in: ' + username)
-                user = load_username(
-                    username,
-                    title,
-                    full_name,
-                    "user",
-                    ', '.join(format_result_zzPDL(result)),
-                )
-
-            login_user(user)
-
-            # Create our JWTs
-            # default expiration 15 minutes
-            expires = datetime.timedelta(hours=12)
-            access_token = create_access_token(identity=username, expires_delta=expires)
-
-            # default expiration 30 days, changed to 12 hours
-            expires = datetime.timedelta(hours=12)
-            refresh_token = create_refresh_token(
-                identity=username, expires_delta=expires
+            log_info('lab_member user logged in: ' + username)
+            user = load_username(
+                username,
+                title,
+                full_name,
+                "lab_member",
+                ', '.join(format_result_zzPDL(result)),
             )
 
-            responseObject = {
-                'status': 'success',
-                'message': 'Hello, '
-                + user.username
-                + '. You have successfully logged in.',
-                'access_token': access_token,
-                'refresh_token': refresh_token,
-                'username': user.username,
-                'title': user.title,
-                'full_name': user.full_name,
-                'role': user.role,
-            }
-
-            return make_response(jsonify(responseObject), 200, None)
         else:
-            return make_response(
-                'You are not authorized to view this website. Please email <a href="mailto:wagnerl@mkscc.org">sample intake support</a> if you need any assistance.',
-                403,
-                None,
+            log_info('non_lab_member user logged in: ' + username)
+            user = load_username(
+                username,
+                title,
+                full_name,
+                "user",
+                ', '.join(format_result_zzPDL(result)),
             )
+
+        login_user(user)
+
+        # Create our JWTs
+        # default expiration 15 minutes
+        expires = datetime.timedelta(hours=12)
+        access_token = create_access_token(identity=username, expires_delta=expires)
+
+        # default expiration 30 days, changed to 12 hours
+        expires = datetime.timedelta(hours=12)
+        refresh_token = create_refresh_token(
+            identity=username, expires_delta=expires
+        )
+
+        responseObject = {
+            'status': 'success',
+            'message': 'Hello, '
+            + user.username
+            + '. You have successfully logged in.',
+            'access_token': access_token,
+            'refresh_token': refresh_token,
+            'username': user.username,
+            'title': user.title,
+            'full_name': user.full_name,
+            'role': user.role,
+        }
+
+        return make_response(jsonify(responseObject), 200, None)
+        # else:
+        #     return make_response(
+        #         'You are not authorized to view this website. Please email <a href="mailto:wagnerl@mkscc.org">sample intake support</a> if you need any assistance.',
+        #         403,
+        #         None,
+        #     )
     # catches all block in case anything unexpected goes wrong
     except Exception as e:
         print(e)
@@ -269,8 +269,12 @@ def get_user_title(result):
 
 def get_user_fullname(result):
     p = re.search("displayName(.*?)\]\,", str(result))
-    full_name = re.sub(r'displayName\': \[b\'', "", p[0])
-    full_name = re.sub(r'\/.*', "", full_name)
+    if '"' in p[0]:
+        full_name = re.sub(r'displayName\': \[b\"', "", p[0])
+        full_name = re.sub(r'\/.*', "", full_name)
+    else:
+        full_name = re.sub(r'displayName\': \[b\'', "", p[0])
+        full_name = re.sub(r'\/.*', "", full_name)
     name = full_name.split(", ")[1] + " " + full_name.split(", ")[0]
     return name
 

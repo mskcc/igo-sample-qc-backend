@@ -42,7 +42,7 @@ def add_and_notify_initial():
         recipients = ""
         user = User.query.filter_by(username=payload["comment"]["username"]).first()
         for report in payload["reports"]:
-            recipients = save_initial_comment_and_relation(
+            comment_relation = save_initial_comment_and_relation(
                 payload["comment"],
                 report,
                 payload["recipients"],
@@ -51,10 +51,17 @@ def add_and_notify_initial():
                 # add decisionsmade object
                 user,
             )
-            if recipients:
-
+            is_pathology_report = report == "Pathology Report"
+            if comment_relation:
+                if (
+                    comment_relation.decision
+                    and comment_relation.decision[0].is_igo_decision
+                ):
+                    is_decided = True
+                else:
+                    is_decided = False
                 notify.send_initial_notification(
-                    recipients, payload["request_id"], report, user
+                    set(comment_relation.recipients.split(',')), payload["request_id"], report, user, is_decided, is_pathology_report
                 )
             else:
                 responseObject = {'message': "Failed to save comment"}
@@ -99,9 +106,14 @@ def add_and_notify():
         # if saving worked
         if recipients:
             if user.role == "lab_member":
+                recipients = (
+                    recipients + "," + payload["comment"]["username"] + "@mskcc.org"
+                )
                 recipients = recipients.split(",")
+                recipients = set(recipients)
+                # recipients.discard("zzPDL_CMO_IGO@mskcc.org")
                 notify.send_notification(
-                    set(recipients),
+                    recipients,
                     payload["comment"],
                     payload["request_id"],
                     payload["report"],
@@ -326,17 +338,15 @@ def save_initial_comment_and_relation(
                 date_created=datetime.now(),
                 date_updated=datetime.now(),
             )
-            user.decisions.append(decision)    
+            user.decisions.append(decision)
             comment_relation.decision.append(decision)
-
-        
 
         db.session.commit()
     except:
         print(traceback.print_exc())
         return None
 
-    return comment_relation.recipients
+    return comment_relation
 
 
 #  saves new comment and returns recipients to send notification to
