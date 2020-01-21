@@ -73,7 +73,6 @@ def get_request_samples():
         role == "lab_member"
         or is_user_authorized_for_request(request_id, load_user(username))
     )
-    print(get_jwt_identity())
     # return is_dec_maker
     if user_authorized_for_request == False:
         response = make_response(
@@ -317,16 +316,18 @@ def get_qc_report_samples():
 
 
 @qc_report.route("/setQCInvestigatorDecision", methods=["POST"])
+@jwt_required
 def set_qc_investigator_decision():
-    payload = request.get_json()
+    payload = request.get_json()["data"]
+    
 
-    username = payload["username"]
-    print(username)
     decisions = payload["decisions"]
     request_id = payload["request_id"]
     report = payload["report"]
     try:
-        decision_user = User.query.filter_by(username=username).first()
+        # decision_user = User.query.filter_by(username=username).first()
+        decision_user = load_user(get_jwt_identity())
+
         # print(decision_user)
         comment_relation = CommentRelation.query.filter(
             and_(
@@ -363,18 +364,7 @@ def set_qc_investigator_decision():
             verify=False,
             data=json.dumps(payload["decisions"]),
         )
-        # log_info(json.dumps(payload["decisions"]), username)
-
-        # # decisions are made by report but everyone should be informed?
-        # commentrelations = CommentRelation.query.filter_by(
-        #     request_id=payload["request_id"]
-        # )
-        # recipients = ""
-        # for commentrelation in commentrelations:
-        #     if recipients == "":
-        #         recipients = commentrelation.recipients
-        #     else:
-        #         recipients = recipients + "," + commentrelation.recipients
+   
 
         notify.send_decision_notification(
             decision_to_save,
@@ -648,7 +638,7 @@ def build_table(reportTable, samples, constantColumnFeatures, order, decisions=N
                             'pathology-status',
                             sample_field_value,
                         )
-                    #  investigator decisions will be overwritten by non-empty lims decisions
+                    #  non-empty lims decisions overwrite investigator decisions for non-submitted decisions
                     elif datafield == "investigatorDecision":
                         if datafield in sample and sample_field_value:
                             responseSample[datafield] = sample_field_value
@@ -672,6 +662,17 @@ def build_table(reportTable, samples, constantColumnFeatures, order, decisions=N
                                                         "investigatorDecision"
                                                     ]
                                                 )
+                                                decided_sample[
+                                                        "investigatorDecision"
+                                                    ] = sample_field_value
+                                                print(
+                                                    decided_sample[
+                                                        "investigatorDecision"
+                                                    ]
+                                                )
+                                                
+                                                db.session.commit()
+
                                                 responseSample[datafield] = str(
                                                     decided_sample[
                                                         "investigatorDecision"
@@ -874,54 +875,3 @@ def is_investigator_decision_read_only(data):
 def load_user(username):
     return User.query.filter_by(username=username).first()
 
-
-@app.after_request
-def after_request(response):
-    # response.headers.add("Access-Control-Allow-Origin", "*")
-    response.headers.add("Access-Control-Allow-Headers", "Content-Type,Authorization")
-    response.headers.add("Access-Control-Allow-Methods", "GET,PUT,POST,DELETE")
-    request_args = {key + ":" + request.args[key] for key in request.args}
-
-    if response.is_streamed == True:
-        response_message = (
-            "\n---Flask Request---\n"
-            + "\n".join(request_args)
-            + "\n"
-            + "Streamed Data"
-            + "\n"
-        )
-
-    elif request.path == "/addAndNotify" or request.path == "/addAndNotifyInitial":
-        return response
-
-    elif request.path == "/getAttachmentFile":
-        response_message = (
-            "Args: "
-            + "\n".join(request_args)
-            + "Data: File Data"
-            + "\n"
-            + "User: "
-            + str(get_jwt_identity())
-            + "\n"
-        )
-
-    else:
-        if len(response.data) > 500:
-            data = str(response.data[:500]) + "[...]"
-        else:
-            data = str(response.data)
-
-        response_message = (
-            'Args: '
-            + "\n".join(request_args)
-            + "\n"
-            + "Data: "
-            + str(data)
-            + "\n"
-            + "User: "
-            + str(get_jwt_identity())
-            + "\n"
-        )
-
-    log_info(response_message)
-    return response

@@ -20,32 +20,38 @@ def log_lims(lims_response, username="anonymous"):
         + lims_response.text
         + "\n"
     )
-    app.logger.info(msg)
+
+    # app.logger.info(msg)
 
 
-def log_info(msg, username="anonymous"):
-    app.logger.info(format(msg, username, "Flask"))
+def log_info(msg):
+    app.logger.info(format(msg))
+
+
+def log_email(msg, username, type):
+    
+    app.logger.info((
+        "\n"
+        + "\n---"
+        + type
+        + " EMAIL SENT ---\n"
+        + "ENDPOINT: "
+        + str(request.path)
+        + "\n"
+        + str(msg)
+    ))
 
 
 def log_error(msg):
-    app.logger.error(format(msg, username, "Flask"))
+    app.logger.error(format(msg))
 
 
-def format(msg, username, source):
-
+def format(msg):
     return (
-        "\n---"
-        + source
-        + " Request---\n"
-        + "Endpoint: "
+        "\n"
+        + "\n--- FLASK REQUEST---\n"
+        + "ENDPOINT: "
         + str(request.path)
-        + "\n"
-        + "Function: "
-        + inspect.stack()[3][3]
-        + "\n"
-        + "User: "
-        + username
-        + "\n"
         + "\n"
         + str(msg)
     )

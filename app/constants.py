@@ -17,6 +17,7 @@ sharedColumns = {
         "data": "otherSampleId",
         "columnHeader": "Sample Name",
         "readOnly": "true",
+        "renderer": "html"
     },
     # "UserSampleID": "altId": {"limsField": "AltId", "data": "altId", "columnHeader": "AltId","readOnly":"true",},
     "UserSampleID": {

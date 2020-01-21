@@ -26,6 +26,7 @@ comment = Blueprint('comment', __name__)
 
 # accepts a request argument, request_id, and returns applicable comments
 @comment.route("/getComments", methods=['GET'])
+@jwt_required
 def get_comments():
     request_id = request.args.get("request_id")
     comments_response = load_comments_for_request(request_id)
@@ -35,6 +36,7 @@ def get_comments():
 
 # accepts a request payload, the new comment, saves it to the DB, and returns comments with the same request_id
 @comment.route("/addAndNotifyInitial", methods=['POST'])
+@jwt_required
 def add_and_notify_initial():
     payload = request.get_json()['data']
 
@@ -82,6 +84,7 @@ def add_and_notify_initial():
 
 
 @comment.route("/addAndNotify", methods=['POST'])
+@jwt_required
 def add_and_notify():
     payload = request.get_json()['data']
     try:
@@ -145,6 +148,7 @@ def add_and_notify():
 
 
 @comment.route("/addToAllAndNotify", methods=['POST'])
+@jwt_required
 def add_to_all_and_notify():
     payload = request.get_json()['data']
     print(payload)
@@ -246,8 +250,11 @@ def delete_comment():
 def load_comments():
     comments = Comment.query.all()
     comments_response = []
-    for x in comments:
-        comments_response.append(x.serialize)
+    if len(comments) > 0:
+        for x in comments:
+            comments_response.append(x.serialize)
+    else:
+        print("NO COMMENT FOUND")
     return comments_response
 
 
@@ -369,84 +376,3 @@ def save_comment(comment, report, request_id, user, comment_relation):
         return None
 
     return
-
-
-@app.after_request
-def after_request(response):
-
-    # response.headers.add("Access-Control-Allow-Origin", "*")
-    response.headers.add("Access-Control-Allow-Headers", "Content-Type,Authorization")
-    response.headers.add("Access-Control-Allow-Methods", "GET,PUT,POST,DELETE")
-    request_args = {key + ":" + request.args[key] for key in request.args}
-
-    if response.is_streamed == True:
-        response_message = (
-            "\n---Flask Request---\n"
-            + "\n".join(request_args)
-            + "\n"
-            + "Streamed Data"
-            + "\n"
-        )
-
-    # elif request.path == "/addAndNotify" or request.path == "/addAndNotifyInitial":
-    #     return response
-
-    elif (
-        request.path
-        == "/getAttachmentFile"
-        # or request.path == "/storeReceipt"
-        # or request.path == "/getReceipt"
-        # or request.path == "/exportExcel"
-    ):
-        response_message = (
-            "Args: "
-            + "\n".join(request_args)
-            + "Data: File Data"
-            + "\n"
-            + "User: "
-            + str(get_jwt_identity())
-            + "\n"
-        )
-    # if "/columnDefinition" in request.path or "/initialState" in request.path:
-    #     response_message = (
-    #         'Args: '
-    #         + "\n".join(request_args)
-    #         + "\n"
-    #         + "User: "
-    #         + str(get_jwt_identity())
-    #         + "\n"
-    #     )
-    else:
-        if len(response.data) > 500:
-
-            response_message = (
-                'Args: '
-                + "\n".join(request_args)
-                + "\n"
-                + "Data: "
-                + str(response.data[:500])
-                + "[...]"
-                + "\n"
-                + "User: "
-                + str(get_jwt_identity())
-                + "\n"
-            )
-        else:
-            response_message = (
-                'Args: '
-                + "\n".join(request_args)
-                + "\n"
-                + "Data: "
-                + str(response.data)
-                + "\n"
-                + "User: "
-                + str(get_jwt_identity())
-                + "\n"
-            )
-    # if hasattr(current_user, 'username'):
-    #     username = current_user.username
-    # else:
-    #     username = "anonymous"
-
-    log_info(response_message, 'username')
-    return response
