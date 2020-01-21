@@ -59,26 +59,6 @@ s = requests.Session()
 # queries IGO LIMS REST
 
 
-@qc_report.route("/oncoTranslate")
-def oncoTranslate():
-    codes = [
-        "PRAD",
-        "LUNG",
-        "BREAST",
-        "PAAD",
-        "LUAD",
-        "MEL",
-        "READ",
-        "BLCA",
-        "AMLNOS",
-        "UCEC",
-    ]
-    for code in codes:
-
-        r = s.get("http://oncotree.mskcc.org/api/tumorTypes/search/code/" + code)
-        print(r.json()[0]["name"])
-
-
 @qc_report.route("/getRequestSamples", methods=['GET'])
 @jwt_required
 def get_request_samples():
@@ -239,7 +219,7 @@ def get_qc_report_samples():
                             decisions,
                         )
                         tables[field]["readOnly"] = read_only
-                        print(lims_data[field])
+                        # print(lims_data[field])
 
                 if field == "rnaReportSamples":
 
@@ -471,6 +451,7 @@ def save_partial_decision():
 
 
 @qc_report.route("/getPending", methods=["GET"])
+@jwt_required
 def get_pending():
     # get request ids from commentrelation where not in request id from decisions
     try:
@@ -478,10 +459,8 @@ def get_pending():
             CommentRelation.decision == None
         )
         return build_pending_list(pendings)
-
     except:
         log_info(traceback.print_exc())
-
         return None
 
 
@@ -628,7 +607,13 @@ def build_table(reportTable, samples, constantColumnFeatures, order, decisions=N
                 sample_field_value = sample[datafield]
 
                 if datafield_formatted in order:
-                    if datafield == "igoQcRecommendation":
+                    if datafield == "otherSampleId" and (",") in sample_field_value:
+
+                        sample_field_value = sample_field_value.replace(',', ', ')
+                        responseSample[datafield] = sample_field_value.replace(
+                            '-', '&#8209;'
+                        )
+                    elif datafield == "igoQcRecommendation":
                         recommendation = sample_field_value
 
                         responseSample[datafield] = "<div class=%s>%s</div>" % (
@@ -642,7 +627,7 @@ def build_table(reportTable, samples, constantColumnFeatures, order, decisions=N
                         "rin",
                         "din",
                         "dV200",
-                        'humanPercentage'
+                        'humanPercentage',
                     ]:
                         if sample_field_value:
                             responseSample[datafield] = round(
@@ -860,15 +845,20 @@ def is_user_authorized_for_request(request_id, user):
     commentrelations = CommentRelation.query.filter_by(request_id=request_id)
     for relation in commentrelations:
         # username listed specifically
-        if user.username in relation.recipients or user.username in relation.author:
+        if (user.username.lower() in relation.recipients.lower()) or (
+            user.username.lower() in author.lower()
+        ):
             return True
         # user is PM and skicmopm recipient (PMs do not use zzPDLs for this to be able to communicate
         # with outside invastigators
-        if PM_EMAIL_LIST in relation.recipients and PM_ZZPDL in user.groups:
+        if (
+            PM_EMAIL_LIST.lower() in relation.recipients.lower()
+            and PM_ZZPDL.lower() in user.groups.lower()
+        ):
             return True
         # one of user's groups listed
         for recipient in relation.recipients.split(","):
-            if re.sub("@mskcc.org", "", recipient) in user.groups:
+            if re.sub("@mskcc.org", "", recipient.lower()) in user.groups.lower():
                 return True
     return False
 
@@ -887,7 +877,6 @@ def load_user(username):
 
 @app.after_request
 def after_request(response):
-
     # response.headers.add("Access-Control-Allow-Origin", "*")
     response.headers.add("Access-Control-Allow-Headers", "Content-Type,Authorization")
     response.headers.add("Access-Control-Allow-Methods", "GET,PUT,POST,DELETE")
@@ -905,13 +894,7 @@ def after_request(response):
     elif request.path == "/addAndNotify" or request.path == "/addAndNotifyInitial":
         return response
 
-    elif (
-        request.path
-        == "/getAttachmentFile"
-        # or request.path == "/storeReceipt"
-        # or request.path == "/getReceipt"
-        # or request.path == "/exportExcel"
-    ):
+    elif request.path == "/getAttachmentFile":
         response_message = (
             "Args: "
             + "\n".join(request_args)
@@ -921,46 +904,24 @@ def after_request(response):
             + str(get_jwt_identity())
             + "\n"
         )
-    # if "/columnDefinition" in request.path or "/initialState" in request.path:
-    #     response_message = (
-    #         'Args: '
-    #         + "\n".join(request_args)
-    #         + "\n"
-    #         + "User: "
-    #         + str(get_jwt_identity())
-    #         + "\n"
-    #     )
+
     else:
         if len(response.data) > 500:
-
-            response_message = (
-                'Args: '
-                + "\n".join(request_args)
-                + "\n"
-                + "Data: "
-                + str(response.data[:500])
-                + "[...]"
-                + "\n"
-                + "User: "
-                + str(get_jwt_identity())
-                + "\n"
-            )
+            data = str(response.data[:500]) + "[...]"
         else:
-            response_message = (
-                'Args: '
-                + "\n".join(request_args)
-                + "\n"
-                + "Data: "
-                + str(response.data)
-                + "\n"
-                + "User: "
-                + str(get_jwt_identity())
-                + "\n"
-            )
-    # if hasattr(current_user, 'username'):
-    #     username = current_user.username
-    # else:
-    #     username = "anonymous"
+            data = str(response.data)
 
-    log_info(response_message, 'username')
+        response_message = (
+            'Args: '
+            + "\n".join(request_args)
+            + "\n"
+            + "Data: "
+            + str(data)
+            + "\n"
+            + "User: "
+            + str(get_jwt_identity())
+            + "\n"
+        )
+
+    log_info(response_message)
     return response
