@@ -7,6 +7,10 @@ from email.mime.text import MIMEText
 from email.message import EmailMessage
 from datetime import datetime
 
+# NOTIFICATION MODULE
+# notifications are sent to recipients selected in initial report editor,
+# editor is pre-filled with request level email information
+# cmo_igo is pulled from recipients and bcc'd
 NOTIFICATION_SENDER = app.config["NOTIFICATION_SENDER"]
 IGO_EMAIL = app.config["IGO_EMAIL"]
 ENV = app.config["ENV"]
@@ -40,6 +44,7 @@ def send_initial_notification(
             request_id,
             request_id,
         ) + template["footer"] % (author.full_name, author.title)
+
     msg = MIMEText(content, "html")
 
     if is_decided or is_pathology_report:
@@ -54,11 +59,17 @@ def send_initial_notification(
     sender_email = NOTIFICATION_SENDER
 
     msg['From'] = sender_email
-    msg['To'] = ", ".join(recipients)
+    all_recipients = recipients.copy()
+
+    if IGO_EMAIL in recipients:
+        recipients.discard(IGO_EMAIL)
+
+    # the email header's "to" field is for display only, the actual to address is in the sendmail() params
+    msg['To'] = ', '.join(recipients)
 
     # Send the message via our own SMTP server.
     s = smtplib.SMTP('localhost')
-    s.sendmail(sender_email, recipients, msg.as_string())
+    s.sendmail(sender_email, all_recipients, msg.as_string())
     s.close()
     log_email(msg.as_string(), author.username, "Initial Comment")
     return "done"
@@ -66,6 +77,7 @@ def send_initial_notification(
 
 def send_notification(recipients, comment, request_id, report, author):
     template = constants.notification_email_template_html
+
     if ENV == 'development':
         content = (
             template["body"]
@@ -108,11 +120,16 @@ def send_notification(recipients, comment, request_id, report, author):
     msg['Subject'] = template["subject"] % request_id
 
     msg['From'] = sender_email
-    msg['To'] = ', '.join(recipients)
+    all_recipients = recipients.copy()
 
+    if IGO_EMAIL in recipients:
+        recipients.discard(IGO_EMAIL)
+
+    # the email header's "to" field is for display only, the actual to address is in the sendmail() params
+    msg['To'] = ', '.join(recipients)
     # # # Send the message via our own SMTP server.
     s = smtplib.SMTP('localhost')
-    s.sendmail(sender_email, recipients, msg.as_string())
+    s.sendmail(sender_email, all_recipients, msg.as_string())
     s.close()
     log_email(msg.as_string(), author.username, "Additional Comment")
     return "done"
@@ -159,11 +176,16 @@ def send_decision_notification(decision, decision_user, recipients, initial_auth
     msg['Subject'] = template["subject"] % (decision.request_id, decision.report)
 
     msg['From'] = sender_email
-    msg['To'] = ', '.join(recipients)
+    all_recipients = recipients.copy()
 
+    if IGO_EMAIL in recipients:
+        recipients.discard(IGO_EMAIL)
+
+    # the email header's "to" field is for display only, the actual to address is in the sendmail() params
+    msg['To'] = ', '.join(recipients)
     # Send the message via our own SMTP server.
     s = smtplib.SMTP('localhost')
-    s.sendmail(sender_email, recipients, msg.as_string())
+    s.sendmail(sender_email, all_recipients, msg.as_string())
     s.close()
     log_email(msg.as_string(), decision_user.username, "Decision")
     return "done"
