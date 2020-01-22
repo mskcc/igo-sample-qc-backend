@@ -519,6 +519,7 @@ def build_table(reportTable, samples, constantColumnFeatures, order, decisions=N
     if not samples:
         return {}
     else:
+        # print(samples)
         # disregard LIMS order and apply order from constants to column feature constant
         for constantOrderedColumn in order:
 
@@ -688,16 +689,20 @@ def build_table(reportTable, samples, constantColumnFeatures, order, decisions=N
 
                 # else:
                 #     responseSample[datafield] = ""
+
             responseSamples.append(responseSample)
         # generate handsontable header object
         for column in responseColumnFeatures:
             responseHeaders.append(column["columnHeader"])
-
-        return {
-            "data": responseSamples,
-            "columnFeatures": responseColumnFeatures,
-            "columnHeaders": responseHeaders,
-        }
+            
+        if responseSamples:
+            return {
+                "data": responseSamples,
+                "columnFeatures": responseColumnFeatures,
+                "columnHeaders": responseHeaders,
+            }
+        else:
+            return {}
 
 
 def get_decisions_for_request(request_id):

@@ -271,6 +271,7 @@ def load_comments_for_request(request_id):
         comments_response = {
             "DNA Report": {"comments": [], "recipients": ""},
             "RNA Report": {"comments": [], "recipients": ""},
+            "Pool Report": {"comments": [], "recipients": ""},
             "Library Report": {"comments": [], "recipients": ""},
             "Pathology Report": {"comments": [], "recipients": ""},
         }
