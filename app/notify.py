@@ -20,7 +20,6 @@ def send_initial_notification(
     recipients, request_id, report, author, is_decided, is_pathology_report
 ):
     template = constants.initial_email_template_html
-
     if ENV == 'development':
         content = (
             template["body"]
@@ -28,6 +27,8 @@ def send_initial_notification(
             + template["footer"] % (author.full_name, author.title)
             + "<br><br>In production, this email would have been sent to:"
             + ", ".join(recipients)
+            + "<br><br>"
+            + str(constants.user_training_string)
         )
 
         recipients = [
@@ -44,6 +45,8 @@ def send_initial_notification(
             request_id,
             request_id,
         ) + template["footer"] % (author.full_name, author.title)
+        +"<br><br>"
+        +str(constants.user_training_string)
 
     msg = MIMEText(content, "html")
 
@@ -92,6 +95,8 @@ def send_notification(recipients, comment, request_id, report, author):
             + template["footer"]
             + "<br><br>In production, this email would have been sent to:"
             + ", ".join(recipients)
+            + "<br><br>"
+            + str(constants.user_training_string)
         )
         recipients = [
             "wagnerl@mskcc.org",
@@ -111,6 +116,8 @@ def send_notification(recipients, comment, request_id, report, author):
                 request_id,
             )
             + template["footer"]
+            + "<br><br>"
+            + str(constants.user_training_string)
         )
     sender_email = NOTIFICATION_SENDER
     # print(recipients, "send_notification")
@@ -149,6 +156,8 @@ def send_decision_notification(decision, decision_user, recipients, initial_auth
             + template["footer"]
             + "<br><br>In production, this email would have been sent to:"
             + ", ".join(recipients)
+            + "<br><br>"
+            + str(constants.user_training_string)
         )
         recipients = [
             "wagnerl@mskcc.org",
@@ -166,6 +175,8 @@ def send_decision_notification(decision, decision_user, recipients, initial_auth
                 decision.request_id,
             )
             + template["footer"]
+            + "<br><br>"
+            + str(constants.user_training_string)
         )
     # receiver_email = recipients
     # print(recipients, "send_decision_notification")

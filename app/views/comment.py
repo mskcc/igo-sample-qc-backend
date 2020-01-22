@@ -304,7 +304,7 @@ def load_comments_for_request(request_id):
 #  saves initial new comment and relation and returns recipients to send notification to
 def save_initial_comment_and_relation(
     comment, report, recipients, request_id, decisions_made, user
-):
+):  
     comment_relation = (
         CommentRelation.query.filter(CommentRelation.request_id == request_id)
         .filter(CommentRelation.report == report)
