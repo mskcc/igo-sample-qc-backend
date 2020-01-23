@@ -694,7 +694,7 @@ def build_table(reportTable, samples, constantColumnFeatures, order, decisions=N
         # generate handsontable header object
         for column in responseColumnFeatures:
             responseHeaders.append(column["columnHeader"])
-            
+
         if responseSamples:
             return {
                 "data": responseSamples,
@@ -852,7 +852,7 @@ def is_user_authorized_for_request(request_id, user):
     for relation in commentrelations:
         # username listed specifically
         if (user.username.lower() in relation.recipients.lower()) or (
-            user.username.lower() in author.lower()
+            user.username.lower() in relation.author.lower()
         ):
             return True
         # user is PM and skicmopm recipient (PMs do not use zzPDLs for this to be able to communicate
