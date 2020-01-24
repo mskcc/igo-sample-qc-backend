@@ -39,14 +39,13 @@ def send_initial_notification(
 
         recipients = set(recipients)
     else:
-        content = template["body"] % (
-            report.split(' ')[0],
-            request_id,
-            request_id,
-            request_id,
-        ) + template["footer"] % (author.full_name, author.title)
-        +"<br><br>"
-        +str(constants.user_training_string)
+        content = (
+            template["body"]
+            % (report.split(' ')[0], request_id, request_id, request_id)
+            + template["footer"] % (author.full_name, author.title)
+            + "<br><br>"
+            + str(constants.user_training_string)
+        )
 
     msg = MIMEText(content, "html")
 
