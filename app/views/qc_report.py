@@ -206,7 +206,7 @@ def get_qc_report_samples():
                     if is_lab_member or (
                         is_authorized_for_request and "DNA Report" in reports
                     ):
-                        read_only = is_investigator_decision_read_only(lims_data[field])
+                        read_only = is_investigator_decision_read_only(lims_data[field],is_lab_member)
                         dnaColumns = constants.dnaColumns
                         dnaColumns["InvestigatorDecision"]["readOnly"] = read_only
                         constantColumnFeatures = mergeColumns(sharedColumns, dnaColumns)
@@ -225,7 +225,7 @@ def get_qc_report_samples():
                     if is_lab_member or (
                         is_authorized_for_request and "RNA Report" in reports
                     ):
-                        read_only = is_investigator_decision_read_only(lims_data[field])
+                        read_only = is_investigator_decision_read_only(lims_data[field],is_lab_member)
                         rnaColumns = constants.rnaColumns
                         rnaColumns["InvestigatorDecision"]["readOnly"] = read_only
                         constantColumnFeatures = mergeColumns(sharedColumns, rnaColumns)
@@ -242,7 +242,7 @@ def get_qc_report_samples():
                     if is_lab_member or (
                         is_authorized_for_request and "Library Report" in reports
                     ):
-                        read_only = is_investigator_decision_read_only(lims_data[field])
+                        read_only = is_investigator_decision_read_only(lims_data[field],is_lab_member)
                         libraryColumns = constants.libraryColumns
                         libraryColumns["InvestigatorDecision"]["readOnly"] = read_only
                         constantColumnFeatures = mergeColumns(
@@ -261,7 +261,7 @@ def get_qc_report_samples():
                     if is_lab_member or (
                         is_authorized_for_request and "Pool Report" in reports
                     ):
-                        read_only = is_investigator_decision_read_only(lims_data[field])
+                        read_only = is_investigator_decision_read_only(lims_data[field],is_lab_member)
                         libraryColumns = constants.libraryColumns
                         libraryColumns["InvestigatorDecision"]["readOnly"] = read_only
                         constantColumnFeatures = mergeColumns(
@@ -389,7 +389,7 @@ def set_qc_investigator_decision():
 
 @qc_report.route("/savePartialSubmission", methods=["POST"])
 def save_partial_decision():
-    payload = request.get_json()
+    payload = request.get_json()["data"]
 
     username = payload["username"]
     decisions = payload["decisions"]
@@ -403,7 +403,6 @@ def save_partial_decision():
         ).first()
 
         if decision:
-            print('dec found')
             if decision.is_submitted:
                 responseObject = {
                     'message': "This decision was already submitted to IGO and cannot be saved. Contact IGO if you need to make changes."
@@ -439,6 +438,66 @@ def save_partial_decision():
 
     return make_response(jsonify(responseObject), 400, None)
 
+@qc_report.route("/manuallyAddDecision", methods=["POST"])
+@jwt_required
+def manually_add_decision():
+    payload = request.get_json()["data"]
+
+    username = payload["username"]
+    decisions = payload["decisions"]
+    request_id = payload["request_id"]
+    report = payload["report"]
+    try:
+        decision_user = User.query.filter_by(username=username).first()
+
+        decision = Decision.query.filter_by(
+            request_id=request_id, report=report
+        ).first()
+        comment_relation = CommentRelation.query.filter(
+            and_(
+                CommentRelation.request_id == request_id,
+                CommentRelation.report == report,
+            )
+        ).first()
+
+        if decision:
+            if decision.is_submitted:
+                responseObject = {
+                    'message': "This decision was already submitted to IGO and cannot be saved. Contact IGO if you need to make changes."
+                }
+
+                return make_response(jsonify(responseObject), 400, None)
+            else:
+                decision.decisions = json.dumps(decisions)
+                decision.is_submitted = True
+
+        else:
+            decision = Decision(
+                decisions=json.dumps(decisions),
+                report=report,
+                request_id=request_id,
+                is_submitted=True,
+                date_created=datetime.now(),
+                date_updated=datetime.now(),
+            )
+            db.session.add(decision)
+        decision_user.decisions.append(decision)
+        comment_relation.decision.append(decision)
+        db.session.commit()
+
+        responseObject = {'message': "Decision added."}
+
+        return make_response(jsonify(responseObject), 200, None)
+    except:
+        log_info(traceback.print_exc())
+        db.session.rollback()
+
+        responseObject = {
+            'message': "Failed to save. Please contact an admin by emailing zzPDL_SKI_IGO_DATA@mskcc.org"
+        }
+        return make_response(jsonify(responseObject), 400, None)
+
+    return make_response(jsonify(responseObject), 400, None)
 
 @qc_report.route("/getPending", methods=["GET"])
 @jwt_required
@@ -870,7 +929,9 @@ def is_user_authorized_for_request(request_id, user):
 
 
 # iterate over lims returned investigator decisions, set column to be editable if at least one decision is unfilled
-def is_investigator_decision_read_only(data):
+def is_investigator_decision_read_only(data, is_lab_member):
+    if is_lab_member:
+        return True
     for field in data:
         if not field["investigatorDecision"] and field["hideFromSampleQC"] != True:
             return False
