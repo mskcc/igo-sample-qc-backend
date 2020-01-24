@@ -331,4 +331,4 @@ decision_notification_email_template_html = {
     "footer": "<br><a style='color:#f29934; font-weight:bold;' href='http://cmo.mskcc.org/cmo/igo/'>Integrated Genomics Operation</a><br><a href='https://www.mskcc.org'>Memorial Sloan Kettering Cancer Center</a><br>T 646.888.3765<br>Follow us on <a href='https://www.instagram.com/genomics212/?hl=en'>Instagram</a> and <a href='https://twitter.com/genomics212?lang=en'>Twitter</a>!<br>",
 }
 
-user_training_string = "Unfamiliar with IGO's new process for sharing QC results? Watch our 5 minute how-to video <a href='https://igo.mskcc.org/sample-qc/instructions'>here</a> or stop by IGO's Smartboard (located near the ZRC 3rd floor elevator bank) from 3-4 PM until Feb 5th, for an in-person training."
+user_training_string = "Unfamiliar with this new process for sharing QC results? Watch our 5 minute how-to video <a href='https://igo.mskcc.org/sample-qc/instructions'>here</a> or stop by IGO's Smartboard (located near the ZRC 3rd floor elevator bank) from 3-4 PM until Feb 5th, for an in-person training."
