@@ -206,7 +206,9 @@ def get_qc_report_samples():
                     if is_lab_member or (
                         is_authorized_for_request and "DNA Report" in reports
                     ):
-                        read_only = is_investigator_decision_read_only(lims_data[field],is_lab_member)
+                        read_only = is_investigator_decision_read_only(
+                            lims_data[field], is_lab_member
+                        )
                         dnaColumns = constants.dnaColumns
                         dnaColumns["InvestigatorDecision"]["readOnly"] = read_only
                         constantColumnFeatures = mergeColumns(sharedColumns, dnaColumns)
@@ -225,7 +227,9 @@ def get_qc_report_samples():
                     if is_lab_member or (
                         is_authorized_for_request and "RNA Report" in reports
                     ):
-                        read_only = is_investigator_decision_read_only(lims_data[field],is_lab_member)
+                        read_only = is_investigator_decision_read_only(
+                            lims_data[field], is_lab_member
+                        )
                         rnaColumns = constants.rnaColumns
                         rnaColumns["InvestigatorDecision"]["readOnly"] = read_only
                         constantColumnFeatures = mergeColumns(sharedColumns, rnaColumns)
@@ -242,7 +246,9 @@ def get_qc_report_samples():
                     if is_lab_member or (
                         is_authorized_for_request and "Library Report" in reports
                     ):
-                        read_only = is_investigator_decision_read_only(lims_data[field],is_lab_member)
+                        read_only = is_investigator_decision_read_only(
+                            lims_data[field], is_lab_member
+                        )
                         libraryColumns = constants.libraryColumns
                         libraryColumns["InvestigatorDecision"]["readOnly"] = read_only
                         constantColumnFeatures = mergeColumns(
@@ -261,7 +267,9 @@ def get_qc_report_samples():
                     if is_lab_member or (
                         is_authorized_for_request and "Pool Report" in reports
                     ):
-                        read_only = is_investigator_decision_read_only(lims_data[field],is_lab_member)
+                        read_only = is_investigator_decision_read_only(
+                            lims_data[field], is_lab_member
+                        )
                         libraryColumns = constants.libraryColumns
                         libraryColumns["InvestigatorDecision"]["readOnly"] = read_only
                         constantColumnFeatures = mergeColumns(
@@ -319,7 +327,6 @@ def get_qc_report_samples():
 @jwt_required
 def set_qc_investigator_decision():
     payload = request.get_json()["data"]
-    
 
     decisions = payload["decisions"]
     request_id = payload["request_id"]
@@ -364,7 +371,6 @@ def set_qc_investigator_decision():
             verify=False,
             data=json.dumps(payload["decisions"]),
         )
-   
 
         notify.send_decision_notification(
             decision_to_save,
@@ -438,6 +444,7 @@ def save_partial_decision():
 
     return make_response(jsonify(responseObject), 400, None)
 
+
 @qc_report.route("/manuallyAddDecision", methods=["POST"])
 @jwt_required
 def manually_add_decision():
@@ -499,13 +506,17 @@ def manually_add_decision():
 
     return make_response(jsonify(responseObject), 400, None)
 
+
 @qc_report.route("/getPending", methods=["GET"])
 @jwt_required
 def get_pending():
     # get request ids from commentrelation where not in request id from decisions
     try:
         pendings = db.session.query(CommentRelation).filter(
-            CommentRelation.decision == None
+            or_(
+                CommentRelation.decision == None,
+                CommentRelation.decision.is_submitted == False,
+            )
         )
         return build_pending_list(pendings)
     except:
@@ -522,7 +533,12 @@ def get_user_pending():
     try:
         pendings = (
             db.session.query(CommentRelation)
-            .filter(CommentRelation.decision == None)
+            .filter(
+                or_(
+                    CommentRelation.decision == None,
+                    CommentRelation.decision.is_submitted == False,
+                )
+            )
             .filter(
                 or_(
                     CommentRelation.author == user.username,
@@ -723,14 +739,14 @@ def build_table(reportTable, samples, constantColumnFeatures, order, decisions=N
                                                     ]
                                                 )
                                                 decided_sample[
-                                                        "investigatorDecision"
-                                                    ] = sample_field_value
+                                                    "investigatorDecision"
+                                                ] = sample_field_value
                                                 print(
                                                     decided_sample[
                                                         "investigatorDecision"
                                                     ]
                                                 )
-                                                
+
                                                 db.session.commit()
 
                                                 responseSample[datafield] = str(
@@ -777,6 +793,7 @@ def build_pending_list(pendings):
     responsePendings = []
 
     for pending in pendings:
+        print(pending.request_id, pending.report, pending.id)
         responsePending = {}
         responsePending["request_id"] = pending.request_id
         responsePending["date"] = pending.date_created
@@ -940,4 +957,3 @@ def is_investigator_decision_read_only(data, is_lab_member):
 
 def load_user(username):
     return User.query.filter_by(username=username).first()
-
