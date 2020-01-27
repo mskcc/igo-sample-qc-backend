@@ -336,11 +336,8 @@ def set_qc_investigator_decision():
         decision_user = load_user(get_jwt_identity())
 
         # print(decision_user)
-        comment_relation = CommentRelation.query.filter(
-            and_(
-                CommentRelation.request_id == request_id,
-                CommentRelation.report == report,
-            )
+        comment_relation = CommentRelation.query.filter_by(
+            request_id=request_id, report=report
         ).first()
 
         decision_to_save = Decision.query.filter_by(request_id=request_id).first()
@@ -983,8 +980,6 @@ def is_user_authorized_for_request(request_id, user):
 
 # iterate over lims returned investigator decisions, set column to be editable if at least one decision is unfilled
 def is_investigator_decision_read_only(data, is_lab_member):
-    if is_lab_member:
-        return True
     for field in data:
         if not field["investigatorDecision"] and field["hideFromSampleQC"] != True:
             return False
