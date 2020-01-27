@@ -515,7 +515,7 @@ def get_pending():
         pendings = db.session.query(CommentRelation).filter(
             or_(
                 CommentRelation.decision == None,
-                CommentRelation.decision.is_submitted == False,
+                CommentRelation.decision.any(Decision.is_submitted == False),
             )
         )
         return build_pending_list(pendings)
@@ -536,7 +536,7 @@ def get_user_pending():
             .filter(
                 or_(
                     CommentRelation.decision == None,
-                    CommentRelation.decision.is_submitted == False,
+                    CommentRelation.decision.any(Decision.is_submitted == False),
                 )
             )
             .filter(
@@ -793,7 +793,9 @@ def build_pending_list(pendings):
     responsePendings = []
 
     for pending in pendings:
-        print(pending.request_id, pending.report, pending.id)
+        # if not pending.decision or pending.decision.is_submitted == False:
+        #     if pending.decision.is_submitted == False:
+        #         print(pending.request_id, pending.report, pending.id, pending.decision.is_submitted )
         responsePending = {}
         responsePending["request_id"] = pending.request_id
         responsePending["date"] = pending.date_created
