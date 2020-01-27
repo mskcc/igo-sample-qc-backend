@@ -789,7 +789,10 @@ def build_pending_list(pendings):
         responsePending = {}
         responsePending["request_id"] = pending.request_id
         responsePending["date"] = pending.date_created
-        responsePending["most_recent_date"] = pending.children[-1].date_created
+        if pending.children:
+            responsePending["most_recent_date"] = pending.children[-1].date_created
+        else:
+            responsePending["most_recent_date"] = pending.date_created
         # print(pending.children[-1].date_created, pending.request_id)
         responsePending["report"] = pending.report
         responsePending["author"] = pending.author
@@ -882,10 +885,14 @@ def build_user_pending_list(pendings):
     responsePendings = []
 
     for pending in pendings:
+        # print(pending.serialize)
         responsePending = {}
         responsePending["request_id"] = pending.request_id
         responsePending["date"] = pending.date_created
-        responsePending["most_recent_date"] = pending.children[-1].date_created
+        if pending.children:
+            responsePending["most_recent_date"] = pending.children[-1].date_created
+        else:
+            responsePending["most_recent_date"] = pending.date_created
         # print(pending.children[-1].date_created, pending.request_id)
         responsePending["report"] = pending.report
 
