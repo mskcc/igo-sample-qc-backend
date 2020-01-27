@@ -36,7 +36,6 @@ user = Blueprint('user', __name__)
 # accepts a role argument and returns applicable users
 @user.route("/getUsers", methods=['GET'])
 def get_users():
-
     role = request.args.get("role")
     users_response = load_users_of_role(role)
     # columnDefs.append(copy.deepcopy(possible_fields[column[0]]))
@@ -227,8 +226,8 @@ def load_users_of_role(role):
 def load_username(username, title, full_name, role, groups):
     user = User.query.filter_by(username=username).first()
 
-    print(type(groups))
-    print(groups)
+    # print(type(groups))
+    # print(groups)
     if not user:
         user = User(
             username=username,
@@ -290,7 +289,7 @@ def format_result_group(result):
 
 # returns groups the user is a part of
 def format_result_zzPDL(result):
-    print(result)
+    # print(result)
     # compiles reg ex pattern into reg ex object
     groups = re.findall('CN=(zzPDL.*?)\,', str(result))
     # groups = re.sub('CN=', '', p[0])

@@ -44,7 +44,6 @@ import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
-
 # ENV = app.config["ENV"]
 # if ENV == "development":
 #     logging.getLogger('sqlalchemy.engine').setLevel(logging.INFO)
@@ -122,6 +121,8 @@ def after_request(response):
 
         elif request.path == "/addAndNotify" or request.path == "/addAndNotifyInitial":
             return response
+        elif request.path == "/login":
+            response_message = ""
 
         elif request.path == "/getAttachmentFile":
             response_message = (
