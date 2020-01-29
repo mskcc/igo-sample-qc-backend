@@ -179,6 +179,32 @@ libraryColumns = {
         "picklistName": "InvestigatorDecisionCustomers",
     },
 }
+
+poolColumns = {
+    "AvgSize": {
+        "limsField": "AvgSize",
+        "data": "avgSize",
+        "columnHeader": "Average Size (bp)",
+        "readOnly": "true",
+    },
+    "TumorOrNormal": {
+        "limsField": "TumorOrNormal",
+        "data": "tumorOrNormal",
+        "columnHeader": "Tumor/Normal",
+        "readOnly": "true",
+    },
+    "InvestigatorDecision": {
+        "limsField": "InvestigatorDecision",
+        "data": "investigatorDecision",
+        "columnHeader": "Investigator Decision",
+        "readOnly": "true",
+        "type": "autocomplete",
+        "strict": "true",
+        "allowInvalid": "false",
+        "trimDropdown": "false",
+        "picklistName": "InvestigatorDecisionCustomers",
+    },
+}
 pathologyColumns = {
     "SampleId": {
         "limsField": "SampleId",
@@ -267,6 +293,21 @@ rnaOrder = [
 ]
 
 libraryOrder = [
+    "OtherSampleId",
+    "Recipe",
+    "IgoQcRecommendation",
+    "Comments",
+    "InvestigatorDecision",
+    "SampleId",
+    "AvgSize",
+    "Concentration",
+    "Volume",
+    "TotalMass",
+    "TumorOrNormal",
+    "RecordId",
+]
+
+poolOrder = [
     "OtherSampleId",
     "Recipe",
     "IgoQcRecommendation",

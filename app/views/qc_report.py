@@ -270,16 +270,16 @@ def get_qc_report_samples():
                         read_only = is_investigator_decision_read_only(
                             lims_data[field], is_lab_member
                         )
-                        libraryColumns = constants.libraryColumns
-                        libraryColumns["InvestigatorDecision"]["readOnly"] = read_only
+                        poolColumns = constants.poolColumns
+                        poolColumns["InvestigatorDecision"]["readOnly"] = read_only
                         constantColumnFeatures = mergeColumns(
-                            sharedColumns, libraryColumns
+                            sharedColumns, poolColumns
                         )
                         tables[field] = build_table(
                             field,
                             lims_data[field],
                             constantColumnFeatures,
-                            constants.libraryOrder,
+                            constants.poolOrder,
                             decisions,
                         )
                         tables[field]["readOnly"] = read_only
