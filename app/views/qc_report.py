@@ -59,26 +59,6 @@ s = requests.Session()
 # queries IGO LIMS REST
 
 
-@qc_report.route("/oncoTranslate")
-def oncoTranslate():
-    codes = [
-        "PRAD",
-        "LUNG",
-        "BREAST",
-        "PAAD",
-        "LUAD",
-        "MEL",
-        "READ",
-        "BLCA",
-        "AMLNOS",
-        "UCEC",
-    ]
-    for code in codes:
-
-        r = s.get("http://oncotree.mskcc.org/api/tumorTypes/search/code/" + code)
-        print(r.json()[0]["name"])
-
-
 @qc_report.route("/getRequestSamples", methods=['GET'])
 @jwt_required
 def get_request_samples():
@@ -93,7 +73,6 @@ def get_request_samples():
         role == "lab_member"
         or is_user_authorized_for_request(request_id, load_user(username))
     )
-    print(get_jwt_identity())
     # return is_dec_maker
     if user_authorized_for_request == False:
         response = make_response(
@@ -227,7 +206,9 @@ def get_qc_report_samples():
                     if is_lab_member or (
                         is_authorized_for_request and "DNA Report" in reports
                     ):
-                        read_only = is_investigator_decision_read_only(lims_data[field])
+                        read_only = is_investigator_decision_read_only(
+                            lims_data[field], is_lab_member
+                        )
                         dnaColumns = constants.dnaColumns
                         dnaColumns["InvestigatorDecision"]["readOnly"] = read_only
                         constantColumnFeatures = mergeColumns(sharedColumns, dnaColumns)
@@ -239,14 +220,16 @@ def get_qc_report_samples():
                             decisions,
                         )
                         tables[field]["readOnly"] = read_only
-                        print(lims_data[field])
+                        # print(lims_data[field])
 
                 if field == "rnaReportSamples":
 
                     if is_lab_member or (
                         is_authorized_for_request and "RNA Report" in reports
                     ):
-                        read_only = is_investigator_decision_read_only(lims_data[field])
+                        read_only = is_investigator_decision_read_only(
+                            lims_data[field], is_lab_member
+                        )
                         rnaColumns = constants.rnaColumns
                         rnaColumns["InvestigatorDecision"]["readOnly"] = read_only
                         constantColumnFeatures = mergeColumns(sharedColumns, rnaColumns)
@@ -263,7 +246,30 @@ def get_qc_report_samples():
                     if is_lab_member or (
                         is_authorized_for_request and "Library Report" in reports
                     ):
-                        read_only = is_investigator_decision_read_only(lims_data[field])
+                        read_only = is_investigator_decision_read_only(
+                            lims_data[field], is_lab_member
+                        )
+                        libraryColumns = constants.libraryColumns
+                        libraryColumns["InvestigatorDecision"]["readOnly"] = read_only
+                        constantColumnFeatures = mergeColumns(
+                            sharedColumns, libraryColumns
+                        )
+                        tables[field] = build_table(
+                            field,
+                            lims_data[field],
+                            constantColumnFeatures,
+                            constants.libraryOrder,
+                            decisions,
+                        )
+                        tables[field]["readOnly"] = read_only
+
+                if field == "poolReportSamples":
+                    if is_lab_member or (
+                        is_authorized_for_request and "Pool Report" in reports
+                    ):
+                        read_only = is_investigator_decision_read_only(
+                            lims_data[field], is_lab_member
+                        )
                         libraryColumns = constants.libraryColumns
                         libraryColumns["InvestigatorDecision"]["readOnly"] = read_only
                         constantColumnFeatures = mergeColumns(
@@ -318,22 +324,20 @@ def get_qc_report_samples():
 
 
 @qc_report.route("/setQCInvestigatorDecision", methods=["POST"])
+@jwt_required
 def set_qc_investigator_decision():
-    payload = request.get_json()
+    payload = request.get_json()["data"]
 
-    username = payload["username"]
-    print(username)
     decisions = payload["decisions"]
     request_id = payload["request_id"]
     report = payload["report"]
     try:
-        decision_user = User.query.filter_by(username=username).first()
+        # decision_user = User.query.filter_by(username=username).first()
+        decision_user = load_user(get_jwt_identity())
+
         # print(decision_user)
-        comment_relation = CommentRelation.query.filter(
-            and_(
-                CommentRelation.request_id == request_id,
-                CommentRelation.report == report,
-            )
+        comment_relation = CommentRelation.query.filter_by(
+            request_id=request_id, report=report
         ).first()
 
         decision_to_save = Decision.query.filter_by(request_id=request_id).first()
@@ -364,18 +368,6 @@ def set_qc_investigator_decision():
             verify=False,
             data=json.dumps(payload["decisions"]),
         )
-        # log_info(json.dumps(payload["decisions"]), username)
-
-        # # decisions are made by report but everyone should be informed?
-        # commentrelations = CommentRelation.query.filter_by(
-        #     request_id=payload["request_id"]
-        # )
-        # recipients = ""
-        # for commentrelation in commentrelations:
-        #     if recipients == "":
-        #         recipients = commentrelation.recipients
-        #     else:
-        #         recipients = recipients + "," + commentrelation.recipients
 
         notify.send_decision_notification(
             decision_to_save,
@@ -400,7 +392,7 @@ def set_qc_investigator_decision():
 
 @qc_report.route("/savePartialSubmission", methods=["POST"])
 def save_partial_decision():
-    payload = request.get_json()
+    payload = request.get_json()["data"]
 
     username = payload["username"]
     decisions = payload["decisions"]
@@ -414,7 +406,6 @@ def save_partial_decision():
         ).first()
 
         if decision:
-            print('dec found')
             if decision.is_submitted:
                 responseObject = {
                     'message': "This decision was already submitted to IGO and cannot be saved. Contact IGO if you need to make changes."
@@ -451,7 +442,70 @@ def save_partial_decision():
     return make_response(jsonify(responseObject), 400, None)
 
 
+@qc_report.route("/manuallyAddDecision", methods=["POST"])
+@jwt_required
+def manually_add_decision():
+    payload = request.get_json()["data"]
+
+    username = payload["username"]
+    decisions = payload["decisions"]
+    request_id = payload["request_id"]
+    report = payload["report"]
+    try:
+        decision_user = User.query.filter_by(username=username).first()
+
+        decision = Decision.query.filter_by(
+            request_id=request_id, report=report
+        ).first()
+        comment_relation = CommentRelation.query.filter(
+            and_(
+                CommentRelation.request_id == request_id,
+                CommentRelation.report == report,
+            )
+        ).first()
+
+        if decision:
+            if decision.is_submitted:
+                responseObject = {
+                    'message': "This decision was already submitted to IGO and cannot be saved. Contact IGO if you need to make changes."
+                }
+
+                return make_response(jsonify(responseObject), 400, None)
+            else:
+                decision.decisions = json.dumps(decisions)
+                decision.is_submitted = True
+
+        else:
+            decision = Decision(
+                decisions=json.dumps(decisions),
+                report=report,
+                request_id=request_id,
+                is_submitted=True,
+                date_created=datetime.now(),
+                date_updated=datetime.now(),
+            )
+            db.session.add(decision)
+        decision_user.decisions.append(decision)
+        comment_relation.decision.append(decision)
+        db.session.commit()
+
+        responseObject = {'message': "Decision added."}
+
+        return make_response(jsonify(responseObject), 200, None)
+    except:
+        log_info(traceback.print_exc())
+        db.session.rollback()
+
+        responseObject = {
+            'message': "Failed to save. Please contact an admin by emailing zzPDL_SKI_IGO_DATA@mskcc.org"
+        }
+        return make_response(jsonify(responseObject), 400, None)
+
+    return make_response(jsonify(responseObject), 400, None)
+
+
 @qc_report.route("/getPending", methods=["GET"])
+@jwt_required
 def get_pending():
     # get request ids from commentrelation where not in request id from decisions
     try:
@@ -459,10 +513,8 @@ def get_pending():
             CommentRelation.decision == None
         )
         return build_pending_list(pendings)
-
     except:
         log_info(traceback.print_exc())
-
         return None
 
 
@@ -531,6 +583,7 @@ def build_table(reportTable, samples, constantColumnFeatures, order, decisions=N
     if not samples:
         return {}
     else:
+        # print(samples)
         # disregard LIMS order and apply order from constants to column feature constant
         for constantOrderedColumn in order:
 
@@ -609,7 +662,13 @@ def build_table(reportTable, samples, constantColumnFeatures, order, decisions=N
                 sample_field_value = sample[datafield]
 
                 if datafield_formatted in order:
-                    if datafield == "igoQcRecommendation":
+                    if datafield == "otherSampleId" and (",") in sample_field_value:
+
+                        sample_field_value = sample_field_value.replace(',', ', ')
+                        responseSample[datafield] = sample_field_value.replace(
+                            '-', '&#8209;'
+                        )
+                    elif datafield == "igoQcRecommendation":
                         recommendation = sample_field_value
 
                         responseSample[datafield] = "<div class=%s>%s</div>" % (
@@ -623,7 +682,7 @@ def build_table(reportTable, samples, constantColumnFeatures, order, decisions=N
                         "rin",
                         "din",
                         "dV200",
-                        'humanPercentage'
+                        'humanPercentage',
                     ]:
                         if sample_field_value:
                             responseSample[datafield] = round(
@@ -644,7 +703,7 @@ def build_table(reportTable, samples, constantColumnFeatures, order, decisions=N
                             'pathology-status',
                             sample_field_value,
                         )
-                    #  investigator decisions will be overwritten by non-empty lims decisions
+                    #  non-empty lims decisions overwrite investigator decisions for non-submitted decisions
                     elif datafield == "investigatorDecision":
                         if datafield in sample and sample_field_value:
                             responseSample[datafield] = sample_field_value
@@ -668,6 +727,17 @@ def build_table(reportTable, samples, constantColumnFeatures, order, decisions=N
                                                         "investigatorDecision"
                                                     ]
                                                 )
+                                                decided_sample[
+                                                    "investigatorDecision"
+                                                ] = sample_field_value
+                                                print(
+                                                    decided_sample[
+                                                        "investigatorDecision"
+                                                    ]
+                                                )
+
+                                                db.session.commit()
+
                                                 responseSample[datafield] = str(
                                                     decided_sample[
                                                         "investigatorDecision"
@@ -683,16 +753,20 @@ def build_table(reportTable, samples, constantColumnFeatures, order, decisions=N
 
                 # else:
                 #     responseSample[datafield] = ""
+
             responseSamples.append(responseSample)
         # generate handsontable header object
         for column in responseColumnFeatures:
             responseHeaders.append(column["columnHeader"])
 
-        return {
-            "data": responseSamples,
-            "columnFeatures": responseColumnFeatures,
-            "columnHeaders": responseHeaders,
-        }
+        if responseSamples:
+            return {
+                "data": responseSamples,
+                "columnFeatures": responseColumnFeatures,
+                "columnHeaders": responseHeaders,
+            }
+        else:
+            return {}
 
 
 def get_decisions_for_request(request_id):
@@ -708,6 +782,54 @@ def build_pending_list(pendings):
     responsePendings = []
 
     for pending in pendings:
+
+        # if not pending.decision or pending.decision.is_submitted == False:
+        #     if pending.decision.is_submitted == False:
+        #         print(pending.request_id, pending.report, pending.id, pending.decision.is_submitted )
+        responsePending = {}
+        responsePending["request_id"] = pending.request_id
+        responsePending["date"] = pending.date_created
+        if pending.children:
+            responsePending["most_recent_date"] = pending.children[-1].date_created
+        else:
+            responsePending["most_recent_date"] = pending.date_created
+        # print(pending.children[-1].date_created, pending.request_id)
+        responsePending["report"] = pending.report
+        responsePending["author"] = pending.author
+        responsePending["recipients"] = (
+            "<div class='recipients-col'>%s</div>"
+            % pending.recipients.replace(',', ',\n')
+        )
+        responsePending["lab_notifications"] = 0
+        responsePending["pm_notifications"] = 0
+        responsePending["user_replies"] = 0
+
+        responsePending["show"] = (
+            "<span pending-id='%s' class ='show-icon'><i class=%s>%s</i></span>"
+            % (pending.request_id, "material-icons", "forward")
+        )
+        # print('get comment authors user role')
+
+        comments = pending.children
+        for comment in comments:
+            if comment.author.role == "lab_member":
+                responsePending["lab_notifications"] += 1
+            if comment.author.role == "project_manager":
+                responsePending["pm_notifications"] += 1
+            if comment.author.role == "user":
+                responsePending["user_replies"] += 1
+
+        responsePendings.append(responsePending)
+    unsubmitted_decisions = Decision.query.filter_by(is_submitted=False)
+    for decision in unsubmitted_decisions:
+        # print(decision)
+        # print(decision.comment_relation_id)
+        pending = CommentRelation.query.get(decision.comment_relation_id)
+        # if not pending.decision or pending.decision.is_submitted == False:
+        #     if pending.decision.is_submitted == False:
+        #         print(pending.request_id, pending.report, pending.id, pending.decision.is_submitted )
+        # print(pending)
+        # print(pending.serialize)
         responsePending = {}
         responsePending["request_id"] = pending.request_id
         responsePending["date"] = pending.date_created
@@ -737,7 +859,7 @@ def build_pending_list(pendings):
                 responsePending["pm_notifications"] += 1
             if comment.author.role == "user":
                 responsePending["user_replies"] += 1
-
+        print(responsePending)
         responsePendings.append(responsePending)
 
     return {
@@ -763,10 +885,14 @@ def build_user_pending_list(pendings):
     responsePendings = []
 
     for pending in pendings:
+        # print(pending.serialize)
         responsePending = {}
         responsePending["request_id"] = pending.request_id
         responsePending["date"] = pending.date_created
-        responsePending["most_recent_date"] = pending.children[-1].date_created
+        if pending.children:
+            responsePending["most_recent_date"] = pending.children[-1].date_created
+        else:
+            responsePending["most_recent_date"] = pending.date_created
         # print(pending.children[-1].date_created, pending.request_id)
         responsePending["report"] = pending.report
 
@@ -841,21 +967,26 @@ def is_user_authorized_for_request(request_id, user):
     commentrelations = CommentRelation.query.filter_by(request_id=request_id)
     for relation in commentrelations:
         # username listed specifically
-        if user.username in relation.recipients or user.username in relation.author:
+        if (user.username.lower() in relation.recipients.lower()) or (
+            user.username.lower() in relation.author.lower()
+        ):
             return True
         # user is PM and skicmopm recipient (PMs do not use zzPDLs for this to be able to communicate
         # with outside invastigators
-        if PM_EMAIL_LIST in relation.recipients and PM_ZZPDL in user.groups:
+        if (
+            PM_EMAIL_LIST.lower() in relation.recipients.lower()
+            and PM_ZZPDL.lower() in user.groups.lower()
+        ):
             return True
         # one of user's groups listed
         for recipient in relation.recipients.split(","):
-            if re.sub("@mskcc.org", "", recipient) in user.groups:
+            if re.sub("@mskcc.org", "", recipient.lower()) in user.groups.lower():
                 return True
     return False
 
 
 # iterate over lims returned investigator decisions, set column to be editable if at least one decision is unfilled
-def is_investigator_decision_read_only(data):
+def is_investigator_decision_read_only(data, is_lab_member):
     for field in data:
         if not field["investigatorDecision"] and field["hideFromSampleQC"] != True:
             return False
@@ -864,84 +995,3 @@ def is_investigator_decision_read_only(data):
 
 def load_user(username):
     return User.query.filter_by(username=username).first()
-
-
-@app.after_request
-def after_request(response):
-
-    # response.headers.add("Access-Control-Allow-Origin", "*")
-    response.headers.add("Access-Control-Allow-Headers", "Content-Type,Authorization")
-    response.headers.add("Access-Control-Allow-Methods", "GET,PUT,POST,DELETE")
-    request_args = {key + ":" + request.args[key] for key in request.args}
-
-    if response.is_streamed == True:
-        response_message = (
-            "\n---Flask Request---\n"
-            + "\n".join(request_args)
-            + "\n"
-            + "Streamed Data"
-            + "\n"
-        )
-
-    elif request.path == "/addAndNotify" or request.path == "/addAndNotifyInitial":
-        return response
-
-    elif (
-        request.path
-        == "/getAttachmentFile"
-        # or request.path == "/storeReceipt"
-        # or request.path == "/getReceipt"
-        # or request.path == "/exportExcel"
-    ):
-        response_message = (
-            "Args: "
-            + "\n".join(request_args)
-            + "Data: File Data"
-            + "\n"
-            + "User: "
-            + str(get_jwt_identity())
-            + "\n"
-        )
-    # if "/columnDefinition" in request.path or "/initialState" in request.path:
-    #     response_message = (
-    #         'Args: '
-    #         + "\n".join(request_args)
-    #         + "\n"
-    #         + "User: "
-    #         + str(get_jwt_identity())
-    #         + "\n"
-    #     )
-    else:
-        if len(response.data) > 500:
-
-            response_message = (
-                'Args: '
-                + "\n".join(request_args)
-                + "\n"
-                + "Data: "
-                + str(response.data[:500])
-                + "[...]"
-                + "\n"
-                + "User: "
-                + str(get_jwt_identity())
-                + "\n"
-            )
-        else:
-            response_message = (
-                'Args: '
-                + "\n".join(request_args)
-                + "\n"
-                + "Data: "
-                + str(response.data)
-                + "\n"
-                + "User: "
-                + str(get_jwt_identity())
-                + "\n"
-            )
-    # if hasattr(current_user, 'username'):
-    #     username = current_user.username
-    # else:
-    #     username = "anonymous"
-
-    log_info(response_message, 'username')
-    return response
