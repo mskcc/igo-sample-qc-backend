@@ -695,14 +695,20 @@ def build_table(reportTable, samples, constantColumnFeatures, order, decisions=N
                         'humanPercentage',
                     ]:
                         if sample_field_value:
-                            responseSample[datafield] = round(
-                                float(sample_field_value), 1
-                            )
+                            try:
+                                responseSample[datafield] = round(
+                                    float(sample_field_value), 1
+                                )
+                            except:
+                                responseSample[datafield] = 'N/A'
                     elif datafield == "volume" or datafield == "avgSize":
                         if sample_field_value:
-                            responseSample[datafield] = round(
-                                float(sample_field_value), 0
-                            )
+                            try:
+                                responseSample[datafield] = round(
+                                    float(sample_field_value), 0
+                                )
+                            except:
+                                responseSample[datafield] = 'N/A'
                     elif datafield == "action":
                         responseSample[datafield] = (
                             "<div class ='download-icon'><i class=%s>%s</i></div>"
@@ -838,7 +844,7 @@ def build_pending_list(pendings):
     for decision in unsubmitted_decisions:
         # print(decision)
         # print(decision.comment_relation_id)
-        if (decision):
+        if decision:
             pending = CommentRelation.query.get(decision.comment_relation_id)
             # if not pending.decision or pending.decision.is_submitted == False:
             #     if pending.decision.is_submitted == False:
@@ -847,7 +853,9 @@ def build_pending_list(pendings):
             # print(pending.serialize)
             responsePending = {}
             responsePending["request_id"] = pending.request_id
-            responsePending["date"] = pending.date_created.strftime("%m/%d/%Y, %H:%M:%S")
+            responsePending["date"] = pending.date_created.strftime(
+                "%m/%d/%Y, %H:%M:%S"
+            )
             responsePending["most_recent_date"] = pending.children[
                 -1
             ].date_created.strftime("%m/%d/%Y, %H:%M:%S")
