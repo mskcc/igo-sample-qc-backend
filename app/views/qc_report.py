@@ -700,7 +700,7 @@ def build_table(reportTable, samples, constantColumnFeatures, order, decisions=N
                                     float(sample_field_value), 1
                                 )
                             except:
-                                responseSample[datafield] = 'N/A'
+                                responseSample[datafield] = sample_field_value
                     elif datafield == "volume" or datafield == "avgSize":
                         if sample_field_value:
                             try:
@@ -708,7 +708,7 @@ def build_table(reportTable, samples, constantColumnFeatures, order, decisions=N
                                     float(sample_field_value), 0
                                 )
                             except:
-                                responseSample[datafield] = 'N/A'
+                                responseSample[datafield] = sample_field_value
                     elif datafield == "action":
                         responseSample[datafield] = (
                             "<div class ='download-icon'><i class=%s>%s</i></div>"
