@@ -838,44 +838,45 @@ def build_pending_list(pendings):
     for decision in unsubmitted_decisions:
         # print(decision)
         # print(decision.comment_relation_id)
-        pending = CommentRelation.query.get(decision.comment_relation_id)
-        # if not pending.decision or pending.decision.is_submitted == False:
-        #     if pending.decision.is_submitted == False:
-        #         print(pending.request_id, pending.report, pending.id, pending.decision.is_submitted )
-        # print(pending)
-        # print(pending.serialize)
-        responsePending = {}
-        responsePending["request_id"] = pending.request_id
-        responsePending["date"] = pending.date_created.strftime("%m/%d/%Y, %H:%M:%S")
-        responsePending["most_recent_date"] = pending.children[
-            -1
-        ].date_created.strftime("%m/%d/%Y, %H:%M:%S")
-        # print(pending.children[-1].date_created.strftime("%m/%d/%Y, %H:%M:%S"), pending.request_id)
-        responsePending["report"] = pending.report
-        responsePending["author"] = pending.author
-        responsePending["recipients"] = (
-            "<div class='recipients-col'>%s</div>"
-            % pending.recipients.replace(',', ',\n')
-        )
-        responsePending["lab_notifications"] = 0
-        responsePending["pm_notifications"] = 0
-        responsePending["user_replies"] = 0
+        if (decision):
+            pending = CommentRelation.query.get(decision.comment_relation_id)
+            # if not pending.decision or pending.decision.is_submitted == False:
+            #     if pending.decision.is_submitted == False:
+            #         print(pending.request_id, pending.report, pending.id, pending.decision.is_submitted )
+            # print(pending)
+            # print(pending.serialize)
+            responsePending = {}
+            responsePending["request_id"] = pending.request_id
+            responsePending["date"] = pending.date_created.strftime("%m/%d/%Y, %H:%M:%S")
+            responsePending["most_recent_date"] = pending.children[
+                -1
+            ].date_created.strftime("%m/%d/%Y, %H:%M:%S")
+            # print(pending.children[-1].date_created.strftime("%m/%d/%Y, %H:%M:%S"), pending.request_id)
+            responsePending["report"] = pending.report
+            responsePending["author"] = pending.author
+            responsePending["recipients"] = (
+                "<div class='recipients-col'>%s</div>"
+                % pending.recipients.replace(',', ',\n')
+            )
+            responsePending["lab_notifications"] = 0
+            responsePending["pm_notifications"] = 0
+            responsePending["user_replies"] = 0
 
-        responsePending["show"] = (
-            "<span pending-id='%s' class ='show-icon'><i class=%s>%s</i></span>"
-            % (pending.request_id, "material-icons", "forward")
-        )
-        # print('get comment authors user role')
+            responsePending["show"] = (
+                "<span pending-id='%s' class ='show-icon'><i class=%s>%s</i></span>"
+                % (pending.request_id, "material-icons", "forward")
+            )
+            # print('get comment authors user role')
 
-        comments = pending.children
-        for comment in comments:
-            if comment.author.role == "lab_member":
-                responsePending["lab_notifications"] += 1
-            if comment.author.role == "project_manager":
-                responsePending["pm_notifications"] += 1
-            if comment.author.role == "user":
-                responsePending["user_replies"] += 1
-        responsePendings.append(responsePending)
+            comments = pending.children
+            for comment in comments:
+                if comment.author.role == "lab_member":
+                    responsePending["lab_notifications"] += 1
+                if comment.author.role == "project_manager":
+                    responsePending["pm_notifications"] += 1
+                if comment.author.role == "user":
+                    responsePending["user_replies"] += 1
+            responsePendings.append(responsePending)
 
     return {
         "data": responsePendings,
