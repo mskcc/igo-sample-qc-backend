@@ -798,12 +798,16 @@ def build_pending_list(pendings):
         #         print(pending.request_id, pending.report, pending.id, pending.decision.is_submitted )
         responsePending = {}
         responsePending["request_id"] = pending.request_id
-        responsePending["date"] = pending.date_created
+        responsePending["date"] = pending.date_created.strftime("%m/%d/%Y, %H:%M:%S")
         if pending.children:
-            responsePending["most_recent_date"] = pending.children[-1].date_created
+            responsePending["most_recent_date"] = pending.children[
+                -1
+            ].date_created.strftime("%m/%d/%Y, %H:%M:%S")
         else:
-            responsePending["most_recent_date"] = pending.date_created
-        # print(pending.children[-1].date_created, pending.request_id)
+            responsePending["most_recent_date"] = pending.date_created.strftime(
+                "%m/%d/%Y, %H:%M:%S"
+            )
+        # print(pending.children[-1].date_created.strftime("%m/%d/%Y, %H:%M:%S"), pending.request_id)
         responsePending["report"] = pending.report
         responsePending["author"] = pending.author
         responsePending["recipients"] = (
@@ -842,9 +846,11 @@ def build_pending_list(pendings):
         # print(pending.serialize)
         responsePending = {}
         responsePending["request_id"] = pending.request_id
-        responsePending["date"] = pending.date_created
-        responsePending["most_recent_date"] = pending.children[-1].date_created
-        # print(pending.children[-1].date_created, pending.request_id)
+        responsePending["date"] = pending.date_created.strftime("%m/%d/%Y, %H:%M:%S")
+        responsePending["most_recent_date"] = pending.children[
+            -1
+        ].date_created.strftime("%m/%d/%Y, %H:%M:%S")
+        # print(pending.children[-1].date_created.strftime("%m/%d/%Y, %H:%M:%S"), pending.request_id)
         responsePending["report"] = pending.report
         responsePending["author"] = pending.author
         responsePending["recipients"] = (
@@ -869,7 +875,6 @@ def build_pending_list(pendings):
                 responsePending["pm_notifications"] += 1
             if comment.author.role == "user":
                 responsePending["user_replies"] += 1
-        print(responsePending)
         responsePendings.append(responsePending)
 
     return {
@@ -898,12 +903,16 @@ def build_user_pending_list(pendings):
         # print(pending.serialize)
         responsePending = {}
         responsePending["request_id"] = pending.request_id
-        responsePending["date"] = pending.date_created
+        responsePending["date"] = pending.date_created.strftime("%m/%d/%Y, %H:%M:%S")
         if pending.children:
-            responsePending["most_recent_date"] = pending.children[-1].date_created
+            responsePending["most_recent_date"] = pending.children[
+                -1
+            ].date_created.strftime("%m/%d/%Y, %H:%M:%S")
         else:
-            responsePending["most_recent_date"] = pending.date_created
-        # print(pending.children[-1].date_created, pending.request_id)
+            responsePending["most_recent_date"] = pending.date_created.strftime(
+                "%m/%d/%Y, %H:%M:%S"
+            )
+        # print(pending.children[-1].date_created.strftime("%m/%d/%Y, %H:%M:%S"), pending.request_id)
         responsePending["report"] = pending.report
 
         responsePending["show"] = (
