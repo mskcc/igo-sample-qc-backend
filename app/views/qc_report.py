@@ -368,15 +368,25 @@ def set_qc_investigator_decision():
             verify=False,
             data=json.dumps(payload["decisions"]),
         )
+        if 'ERROR' in r.text:
+            db.session.rollback()
+            responseObject = {
+                'message': "Failed to submit. Please contact an admin by emailing zzPDL_SKI_IGO_DATA@mskcc.org"
+            }
+            return make_response(jsonify(responseObject), 400, None)
+        else:
 
-        notify.send_decision_notification(
-            decision_to_save,
-            decision_user,
-            set(comment_relation.recipients.split(",")),
-            comment_relation.author,
-        )
+            notify.send_decision_notification(
+                decision_to_save,
+                decision_user,
+                set(comment_relation.recipients.split(",")),
+                comment_relation.author,
+            )
 
-        db.session.commit()
+            db.session.commit()
+            responseObject = {'message': "Submitted."}
+            return make_response(jsonify(responseObject), 200, None)
+
         return r.text
     except:
         log_info(traceback.print_exc())
