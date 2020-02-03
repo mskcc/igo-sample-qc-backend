@@ -186,6 +186,8 @@ def send_decision_notification(decision, decision_user, recipients, initial_auth
     msg['Subject'] = template["subject"] % (decision.request_id, decision.report)
 
     msg['From'] = sender_email
+    intial_author_email= initial_author + "@mskcc.org"
+    recipients.add(intial_author_email)
     all_recipients = recipients.copy()
 
     if IGO_EMAIL in recipients:
