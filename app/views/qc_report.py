@@ -340,7 +340,9 @@ def set_qc_investigator_decision():
             request_id=request_id, report=report
         ).first()
 
-        decision_to_save = Decision.query.filter_by(request_id=request_id).first()
+        decision_to_save = Decision.query.filter_by(
+            comment_relation_id=comment_relation.id
+        ).first()
         if not decision_to_save:
             decision_to_save = Decision(
                 report=(report),
