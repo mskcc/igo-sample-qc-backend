@@ -847,7 +847,11 @@ def build_pending_list(pendings):
         # print(decision)
         # print(decision.comment_relation_id)
         if decision:
-            pending = CommentRelation.query.get(decision.comment_relation_id)
+            try:
+                pending = CommentRelation.query.get(decision.comment_relation_id)
+            except:
+                log_info(traceback.print_exc())
+                continue
             # if not pending.decision or pending.decision.is_submitted == False:
             #     if pending.decision.is_submitted == False:
             #         print(pending.request_id, pending.report, pending.id, pending.decision.is_submitted )
