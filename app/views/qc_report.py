@@ -18,7 +18,8 @@ import requests
 import ast
 from datetime import datetime
 import os.path
-import uwsgi, pickle
+import uwsgi
+import pickle
 from openpyxl import Workbook
 from tempfile import NamedTemporaryFile
 import pandas as pd
@@ -95,6 +96,7 @@ def get_request_samples():
             responseData = {}
 
             if "samples" in lims_data:
+                print(lims_data)
                 responseData["request"] = {}
                 responseData["request"]["samples"] = []
                 responseData["recipients"] = {}
@@ -104,14 +106,21 @@ def get_request_samples():
                 responseData["request"]["investigatorName"] = lims_data[
                     "investigatorName"
                 ]
+
                 responseData["recipients"]["IGOEmail"] = "zzPDL_CMO_IGO@mskcc.org"
                 responseData["recipients"]["LabHeadEmail"] = lims_data["labHeadEmail"]
                 responseData["recipients"]["InvestigatorEmail"] = lims_data[
                     "investigatorEmail"
                 ]
-                responseData["recipients"]["OtherContactEmails"] = lims_data[
-                    "otherContactEmails"
-                ]
+
+                if "qcAccessEmails" in lims_data and lims_data["qcAccessEmails"] != "":
+                    responseData["recipients"]["QcAccessEmails"] = lims_data[
+                        "qcAccessEmails"
+                    ]
+                else:
+                    responseData["recipients"]["OtherContactEmails"] = lims_data[
+                        "otherContactEmails"
+                    ]
 
                 # we only need Investigator Sample Ids
                 for sample in lims_data["samples"]:
@@ -151,11 +160,13 @@ def get_qc_report_samples():
     data['samples'] = samples
 
     is_lab_member = user.role == "lab_member"
+    is_cmo_pm = user.role == ""
     reports = []
     if is_lab_member:
         is_authorized_for_request = True
     else:
-        is_authorized_for_request = is_user_authorized_for_request(request_id, user)
+        is_authorized_for_request = is_user_authorized_for_request(
+            request_id, user)
 
     if not is_lab_member and not is_authorized_for_request:
         return make_response(
@@ -211,7 +222,8 @@ def get_qc_report_samples():
                         )
                         dnaColumns = constants.dnaColumns
                         dnaColumns["InvestigatorDecision"]["readOnly"] = read_only
-                        constantColumnFeatures = mergeColumns(sharedColumns, dnaColumns)
+                        constantColumnFeatures = mergeColumns(
+                            sharedColumns, dnaColumns)
                         tables[field] = build_table(
                             field,
                             lims_data[field],
@@ -232,7 +244,8 @@ def get_qc_report_samples():
                         )
                         rnaColumns = constants.rnaColumns
                         rnaColumns["InvestigatorDecision"]["readOnly"] = read_only
-                        constantColumnFeatures = mergeColumns(sharedColumns, rnaColumns)
+                        constantColumnFeatures = mergeColumns(
+                            sharedColumns, rnaColumns)
                         tables[field] = build_table(
                             field,
                             lims_data[field],
@@ -676,7 +689,8 @@ def build_table(reportTable, samples, constantColumnFeatures, order, decisions=N
                 if datafield_formatted in order:
                     if datafield == "otherSampleId" and (",") in sample_field_value:
 
-                        sample_field_value = sample_field_value.replace(',', ', ')
+                        sample_field_value = sample_field_value.replace(
+                            ',', ', ')
                         responseSample[datafield] = sample_field_value.replace(
                             '-', '&#8209;'
                         )
@@ -789,7 +803,8 @@ def build_table(reportTable, samples, constantColumnFeatures, order, decisions=N
 
 def get_decisions_for_request(request_id):
     decisions_response = []
-    decisions = Decision.query.filter_by(request_id=request_id, is_submitted=False)
+    decisions = Decision.query.filter_by(
+        request_id=request_id, is_submitted=False)
     # for x in decisions:
     #     decisions_response.append(x.serialize)
     return decisions
@@ -806,7 +821,8 @@ def build_pending_list(pendings):
         #         print(pending.request_id, pending.report, pending.id, pending.decision.is_submitted )
         responsePending = {}
         responsePending["request_id"] = pending.request_id
-        responsePending["date"] = pending.date_created.strftime("%m/%d/%Y, %H:%M:%S")
+        responsePending["date"] = pending.date_created.strftime(
+            "%m/%d/%Y, %H:%M:%S")
         if pending.children:
             responsePending["most_recent_date"] = pending.children[
                 -1
@@ -848,7 +864,8 @@ def build_pending_list(pendings):
         # print(decision.comment_relation_id)
         if decision:
             try:
-                pending = CommentRelation.query.get(decision.comment_relation_id)
+                pending = CommentRelation.query.get(
+                    decision.comment_relation_id)
             except:
                 log_info(traceback.print_exc())
                 continue
@@ -918,7 +935,8 @@ def build_user_pending_list(pendings):
         # print(pending.serialize)
         responsePending = {}
         responsePending["request_id"] = pending.request_id
-        responsePending["date"] = pending.date_created.strftime("%m/%d/%Y, %H:%M:%S")
+        responsePending["date"] = pending.date_created.strftime(
+            "%m/%d/%Y, %H:%M:%S")
         if pending.children:
             responsePending["most_recent_date"] = pending.children[
                 -1
@@ -958,7 +976,8 @@ def build_attachment_list(field, attachments):
         responseAttachment = {}
         responseAttachment["fileName"] = attachment["fileName"]
         responseAttachment["recordId"] = attachment["recordId"]
-        responseAttachment["action"] = "Download " + str(attachment["recordId"])
+        responseAttachment["action"] = "Download " + \
+            str(attachment["recordId"])
         responseAttachments.append(responseAttachment)
 
     return {
@@ -1021,6 +1040,11 @@ def is_user_authorized_for_request(request_id, user):
 
 # iterate over lims returned investigator decisions, set column to be editable if at least one decision is unfilled
 def is_investigator_decision_read_only(data, is_lab_member):
+    for field in data:
+        if not field["investigatorDecision"] and field["hideFromSampleQC"] != True:
+            return False
+    return True
+def is_pm_decision(data, is_lab_member):
     for field in data:
         if not field["investigatorDecision"] and field["hideFromSampleQC"] != True:
             return False
