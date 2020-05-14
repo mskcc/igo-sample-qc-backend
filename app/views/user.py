@@ -78,7 +78,7 @@ def login():
         full_name = get_user_fullname(result)
         title = get_user_title(result)
         # users are saved with their zzPDL memberships, updated on every login
-        if lab_member and False:
+        if lab_member:
             log_info('lab_member user logged in: ' + username)
             user = load_username(
                 username,
@@ -93,7 +93,7 @@ def login():
                 username,
                 title,
                 full_name,
-                "project_manager",
+                "cmo_pm",
                 ', '.join(format_result_zzPDL(result)),
             )
 
@@ -264,8 +264,8 @@ def is_lab_member(result):
     return LAB_MEMBER_GROUP in format_result_group(result)
 
 def is_pm(result):
-    # return PM_ZZPDL in format_result_group(result)
-    return True
+    return PM_ZZPDL in format_result_group(result)
+    
 
 
 
