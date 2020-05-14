@@ -73,22 +73,12 @@ def login():
             return make_response(jsonify(responseObject), 401, None)
         # if the user is part of labmember group
         lab_member = is_lab_member(result)
-        print(lab_member)
-        print(lab_member)
-        print(lab_member)
-        print(lab_member)
-        print(lab_member)
-        print(lab_member)
         project_manager = is_pm(result)
         # if lab_member:
         full_name = get_user_fullname(result)
         title = get_user_title(result)
         # users are saved with their zzPDL memberships, updated on every login
         if lab_member:
-            log_info('lab_member user logged in: ' + username)
-            log_info('lab_member user logged in: ' + username)
-            log_info('lab_member user logged in: ' + username)
-            log_info('lab_member user logged in: ' + username)
             log_info('lab_member user logged in: ' + username)
             user = load_username(
                 username,
