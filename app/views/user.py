@@ -73,12 +73,22 @@ def login():
             return make_response(jsonify(responseObject), 401, None)
         # if the user is part of labmember group
         lab_member = is_lab_member(result)
+        print(lab_member)
+        print(lab_member)
+        print(lab_member)
+        print(lab_member)
+        print(lab_member)
+        print(lab_member)
         project_manager = is_pm(result)
         # if lab_member:
         full_name = get_user_fullname(result)
         title = get_user_title(result)
         # users are saved with their zzPDL memberships, updated on every login
-        if lab_member and False:
+        if lab_member:
+            log_info('lab_member user logged in: ' + username)
+            log_info('lab_member user logged in: ' + username)
+            log_info('lab_member user logged in: ' + username)
+            log_info('lab_member user logged in: ' + username)
             log_info('lab_member user logged in: ' + username)
             user = load_username(
                 username,
@@ -87,13 +97,13 @@ def login():
                 "lab_member",
                 ', '.join(format_result_zzPDL(result)),
             )
-        if project_manager:
+        elif project_manager:
             log_info('pm user logged in: ' + username)
             user = load_username(
                 username,
                 title,
                 full_name,
-                "project_manager",
+                "cmo_pm",
                 ', '.join(format_result_zzPDL(result)),
             )
 
@@ -264,8 +274,8 @@ def is_lab_member(result):
     return LAB_MEMBER_GROUP in format_result_group(result)
 
 def is_pm(result):
-    # return PM_ZZPDL in format_result_group(result)
-    return True
+    return PM_ZZPDL in format_result_group(result)
+    
 
 
 
