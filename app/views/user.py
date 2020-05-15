@@ -89,7 +89,7 @@ def login():
             )
         elif project_manager:
             log_info('pm user logged in: ' + username)
-            if(username == "selcukls"):
+            if username == "selcukls":
                 user = load_username(
                 username,
                 title,
@@ -261,7 +261,7 @@ def load_username(username, title, full_name, role, groups):
         db.session.commit()
     else:
         user.groups = groups
-        user.role = role
+        # user.role = role
         user.login_counter = user.login_counter + 1
         user.login_latest_date = datetime.datetime.now()
         db.session.commit()
