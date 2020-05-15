@@ -89,13 +89,23 @@ def login():
             )
         elif project_manager:
             log_info('pm user logged in: ' + username)
-            user = load_username(
+            if(username == "selcukls"):
+                user = load_username(
                 username,
                 title,
                 full_name,
-                "cmo_pm",
+                "user",
                 ', '.join(format_result_zzPDL(result)),
             )
+
+            else: 
+                user = load_username(
+                    username,
+                    title,
+                    full_name,
+                    "cmo_pm",
+                    ', '.join(format_result_zzPDL(result)),
+                )
 
         else:
             log_info('non_lab_member user logged in: ' + username)
