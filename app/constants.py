@@ -353,6 +353,7 @@ initial_email_template_html = {
     "dev_subject": "[SampleQC Beta-Test] %s %s QC results available%s",
     "subject": "[IGO SampleQC] %s %s QC results available%s",
     "body": "Hello,<br><br>IGO has completed %s QC on project %s. <br><br>Please proceed to <a href='https://igo.mskcc.org/sample-qc/request/%s'>igo.mskcc.org/sample-qc/request/%s</a> to ask any questions, download related documents, and to indicate which sample(s) should continue with processing.<br><br>Thank you,",
+    "cmo_pm_body": "Hello,<br><br>IGO has completed %s QC on project %s. <br><br>You can view the results at <a href='https://igo.mskcc.org/sample-qc/request/%s'>igo.mskcc.org/sample-qc/request/%s</a>. Your Project Manager will be handling any QC related decisions and questions.<br><br>Thank you,",
     "footer": "<br><br><span style='color:#f29934; font-weight:bold;'>%s</span><br>%s<br><a href='http://cmo.mskcc.org/cmo/igo/'>Integrated Genomics Operation</a><br><a href='https://www.mskcc.org'>Memorial Sloan Kettering Cancer Center</a><br>T 646.888.3765<br>Follow us on <a href='https://www.instagram.com/genomics212/?hl=en'>Instagram</a> and <a href='https://twitter.com/genomics212?lang=en'>Twitter</a>!<br>",
 }
 

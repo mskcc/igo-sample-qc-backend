@@ -15,6 +15,7 @@ class CommentRelation(db.Model):
     report = db.Column(db.Text(), nullable=False)
     author = db.Column(db.String(40), db.ForeignKey('users.username'))
     recipients = db.Column(db.Text(), nullable=False)
+    is_cmo_pm_project = db.Column(db.Boolean(), nullable=True)
     date_created = db.Column(db.DateTime, nullable=False)
     date_updated = db.Column(db.DateTime, nullable=True)
     children = relationship("Comment", order_by="Comment.date_created")
@@ -27,11 +28,13 @@ class CommentRelation(db.Model):
         recipients,
         date_updated,
         date_created=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        is_cmo_pm_project=False,
     ):
 
         self.request_id = request_id
         self.report = report
         self.recipients = recipients
+        self.is_cmo_pm_project = is_cmo_pm_project
         self.date_created = date_created
         self.date_updated = date_updated
 
@@ -43,6 +46,7 @@ class CommentRelation(db.Model):
             "request_id": self.request_id,
             "report": self.report,
             "recipients": self.recipients,
+            "is_cmo_pm_project": self.is_cmo_pm_project,
             "date_created": self.date_created.strftime("%Y-%m-%d %H:%M:%S"),
             "date_updated": self.date_updated.strftime("%Y-%m-%d %H:%M:%S"),
         }

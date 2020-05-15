@@ -160,7 +160,9 @@ def get_qc_report_samples():
     data['samples'] = samples
 
     is_lab_member = user.role == "lab_member"
-    is_cmo_pm = user.role == ""
+    is_cmo_pm = user.role == "cmo_pm"
+    
+    # is_cmo_pm = user.role == ""
     reports = []
     if is_lab_member:
         is_authorized_for_request = True
@@ -182,12 +184,13 @@ def get_qc_report_samples():
             data=data,
         )
         # print(r.json())
-
+        is_cmo_pm_only_and_not_pm_user = False
         # if not lab member but auth'd, get commentrelations and only show reports that are ready
         if not is_lab_member and is_authorized_for_request:
             comment_relations = CommentRelation.query.filter(
                 CommentRelation.request_id == request_id
             )
+            
             # print(comment_relations)
             if comment_relations:
 
@@ -197,6 +200,7 @@ def get_qc_report_samples():
                     # print(comment_relation.report)
                     reports.append(str(comment_relation.report))
         # print(reports, 'reports')
+            is_cmo_pm_only_and_not_pm_user = comment_relation.is_cmo_pm_project and not is_cmo_pm
         return_text = ""
         if r.status_code == 200:
             # assemble table data
@@ -217,9 +221,9 @@ def get_qc_report_samples():
                     if is_lab_member or (
                         is_authorized_for_request and "DNA Report" in reports
                     ):
-                        read_only = is_investigator_decision_read_only(
+                        read_only = is_decision_made(
                             lims_data[field], is_lab_member
-                        )
+                        ) or is_cmo_pm_only_and_not_pm_user
                         dnaColumns = constants.dnaColumns
                         dnaColumns["InvestigatorDecision"]["readOnly"] = read_only
                         constantColumnFeatures = mergeColumns(
@@ -239,9 +243,9 @@ def get_qc_report_samples():
                     if is_lab_member or (
                         is_authorized_for_request and "RNA Report" in reports
                     ):
-                        read_only = is_investigator_decision_read_only(
+                        read_only = is_decision_made(
                             lims_data[field], is_lab_member
-                        )
+                        ) or is_cmo_pm_only_and_not_pm_user
                         rnaColumns = constants.rnaColumns
                         rnaColumns["InvestigatorDecision"]["readOnly"] = read_only
                         constantColumnFeatures = mergeColumns(
@@ -259,9 +263,9 @@ def get_qc_report_samples():
                     if is_lab_member or (
                         is_authorized_for_request and "Library Report" in reports
                     ):
-                        read_only = is_investigator_decision_read_only(
+                        read_only = is_decision_made(
                             lims_data[field], is_lab_member
-                        )
+                        ) or is_cmo_pm_only_and_not_pm_user
                         libraryColumns = constants.libraryColumns
                         libraryColumns["InvestigatorDecision"]["readOnly"] = read_only
                         constantColumnFeatures = mergeColumns(
@@ -280,9 +284,11 @@ def get_qc_report_samples():
                     if is_lab_member or (
                         is_authorized_for_request and "Pool Report" in reports
                     ):
-                        read_only = is_investigator_decision_read_only(
+                        read_only = is_decision_made(
                             lims_data[field], is_lab_member
-                        )
+                        ) or is_cmo_pm_only_and_not_pm_user 
+                        
+                        # pm_only = is_decision_for_pms_only(is_pm, )
                         poolColumns = constants.poolColumns
                         poolColumns["InvestigatorDecision"]["readOnly"] = read_only
                         constantColumnFeatures = mergeColumns(
@@ -1019,16 +1025,17 @@ def tmp_file_exists(file_name):
 def is_user_authorized_for_request(request_id, user):
     commentrelations = CommentRelation.query.filter_by(request_id=request_id)
     for relation in commentrelations:
+        # print(relation.recipients)
         # username listed specifically
         if (user.username.lower() in relation.recipients.lower()) or (
             user.username.lower() in relation.author.lower()
         ):
             return True
         # user is PM and skicmopm recipient (PMs do not use zzPDLs for this to be able to communicate
-        # with outside invastigators
+        # with outside investigators
         if (
             PM_EMAIL_LIST.lower() in relation.recipients.lower()
-            and PM_ZZPDL.lower() in user.groups.lower()
+            and user.role == "cmo_pm"
         ):
             return True
         # one of user's groups listed
@@ -1039,12 +1046,11 @@ def is_user_authorized_for_request(request_id, user):
 
 
 # iterate over lims returned investigator decisions, set column to be editable if at least one decision is unfilled
-def is_investigator_decision_read_only(data, is_lab_member):
-    for field in data:
-        if not field["investigatorDecision"] and field["hideFromSampleQC"] != True:
-            return False
-    return True
-def is_pm_decision(data, is_lab_member):
+def is_decision_made(data, is_lab_member):
+    #  readOnly true WHEN:
+    # - decisions made
+    # - person is lab member
+    # - person is user but qcaccessemail field has only pm email
     for field in data:
         if not field["investigatorDecision"] and field["hideFromSampleQC"] != True:
             return False
