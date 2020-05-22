@@ -184,6 +184,7 @@ def get_qc_report_samples():
             data=data,
         )
         # print(r.json())
+        is_cmo_pm_only = False
         is_cmo_pm_only_and_not_pm_user = False
         # if not lab member but auth'd, get commentrelations and only show reports that are ready
         if not is_lab_member and is_authorized_for_request:
@@ -200,6 +201,7 @@ def get_qc_report_samples():
                     # print(comment_relation.report)
                     reports.append(str(comment_relation.report))
         # print(reports, 'reports')
+            is_cmo_pm_only = comment_relation.is_cmo_pm_project
             is_cmo_pm_only_and_not_pm_user = comment_relation.is_cmo_pm_project and not is_cmo_pm
         return_text = ""
         if r.status_code == 200:
@@ -236,6 +238,7 @@ def get_qc_report_samples():
                             decisions,
                         )
                         tables[field]["readOnly"] = read_only
+                        tables[field]["isCmoPmProject"] = is_cmo_pm_only
                         # print(lims_data[field])
 
                 if field == "rnaReportSamples":
@@ -258,6 +261,7 @@ def get_qc_report_samples():
                             decisions,
                         )
                         tables[field]["readOnly"] = read_only
+                        tables[field]["isCmoPmProject"] = is_cmo_pm_only
 
                 if field == "libraryReportSamples":
                     if is_lab_member or (
@@ -279,6 +283,7 @@ def get_qc_report_samples():
                             decisions,
                         )
                         tables[field]["readOnly"] = read_only
+                        tables[field]["isCmoPmProject"] = is_cmo_pm_only
 
                 if field == "poolReportSamples":
                     if is_lab_member or (
@@ -302,6 +307,8 @@ def get_qc_report_samples():
                             decisions,
                         )
                         tables[field]["readOnly"] = read_only
+                        tables[field]["isCmoPmProject"] = is_cmo_pm_only
+                        
 
                 if field == "pathologyReportSamples":
                     if is_lab_member or (
@@ -614,6 +621,17 @@ def build_table(reportTable, samples, constantColumnFeatures, order, decisions=N
     if not samples:
         return {}
     else:
+        example_sample = ""
+        for sample in samples:
+                if "hideFromSampleQC" in sample and sample["hideFromSampleQC"] == False:
+                    example_sample = sample
+                    break
+                else:
+                    example_sample = samples[0]
+        
+        
+        
+        
         # print(samples)
         # disregard LIMS order and apply order from constants to column feature constant
         for constantOrderedColumn in order:
@@ -632,13 +650,14 @@ def build_table(reportTable, samples, constantColumnFeatures, order, decisions=N
                     )
 
                 elif constantOrderedColumn == "Concentration":
+                    
                     concentrationColumn = copy.deepcopy(
                         constantColumnFeatures[constantOrderedColumn]
                     )
                     concentrationColumn["columnHeader"] = (
                         constantColumnFeatures[constantOrderedColumn]["columnHeader"]
                         + ' ('
-                        + samples[0]['concentrationUnits']
+                        + example_sample['concentrationUnits']
                         + ')'
                     )
                     responseColumnFeatures.append(concentrationColumn)
@@ -647,7 +666,7 @@ def build_table(reportTable, samples, constantColumnFeatures, order, decisions=N
                     massColumn = copy.deepcopy(
                         constantColumnFeatures[constantOrderedColumn]
                     )
-                    if samples[0]['concentrationUnits'].lower() == "ng/ul":
+                    if example_sample['concentrationUnits'].lower() == "ng/ul":
 
                         massColumn["columnHeader"] = (
                             constantColumnFeatures[constantOrderedColumn][
@@ -655,7 +674,7 @@ def build_table(reportTable, samples, constantColumnFeatures, order, decisions=N
                             ]
                             + ' (ng)'
                         )
-                    if samples[0]['concentrationUnits'].lower() == "nm":
+                    if example_sample['concentrationUnits'].lower() == "nm":
 
                         massColumn["columnHeader"] = (
                             constantColumnFeatures[constantOrderedColumn][
@@ -687,11 +706,10 @@ def build_table(reportTable, samples, constantColumnFeatures, order, decisions=N
                     + "' class ='download-icon'><i class=%s>%s</i></div>"
                     % ("material-icons", "cloud_download")
                 )
-
             for datafield in sample:
                 datafield_formatted = datafield[0].upper() + datafield[1:]
                 sample_field_value = sample[datafield]
-
+                
                 if datafield_formatted in order:
                     if datafield == "otherSampleId" and (",") in sample_field_value:
 
@@ -707,7 +725,8 @@ def build_table(reportTable, samples, constantColumnFeatures, order, decisions=N
                             recommendation.lower(),
                             recommendation,
                         )
-                    # round measurments to 1 decimal
+                    # round measurements to 1 decimal
+                    
                     elif datafield in [
                         "concentration",
                         "totalMass",
@@ -716,7 +735,7 @@ def build_table(reportTable, samples, constantColumnFeatures, order, decisions=N
                         "dV200",
                         'humanPercentage',
                     ]:
-                        if sample_field_value:
+                        if sample_field_value or sample_field_value == 0.0:
                             try:
                                 responseSample[datafield] = round(
                                     float(sample_field_value), 1
