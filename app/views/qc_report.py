@@ -608,6 +608,13 @@ def build_table(reportTable, samples, constantColumnFeatures, order, decisions=N
     if not samples:
         return {}
     else:
+        example_sample = ""
+        for sample in samples:
+            if "hideFromSampleQC" in sample and sample["hideFromSampleQC"] == False:
+                example_sample = sample
+                break
+            else:
+                example_sample = samples[0]
         # print(samples)
         # disregard LIMS order and apply order from constants to column feature constant
         for constantOrderedColumn in order:
@@ -632,7 +639,7 @@ def build_table(reportTable, samples, constantColumnFeatures, order, decisions=N
                     concentrationColumn["columnHeader"] = (
                         constantColumnFeatures[constantOrderedColumn]["columnHeader"]
                         + ' ('
-                        + samples[0]['concentrationUnits']
+                        + example_sample['concentrationUnits']
                         + ')'
                     )
                     responseColumnFeatures.append(concentrationColumn)
@@ -641,7 +648,7 @@ def build_table(reportTable, samples, constantColumnFeatures, order, decisions=N
                     massColumn = copy.deepcopy(
                         constantColumnFeatures[constantOrderedColumn]
                     )
-                    if samples[0]['concentrationUnits'].lower() == "ng/ul":
+                    if example_sample['concentrationUnits'].lower() == "ng/ul":
 
                         massColumn["columnHeader"] = (
                             constantColumnFeatures[constantOrderedColumn][
@@ -649,7 +656,7 @@ def build_table(reportTable, samples, constantColumnFeatures, order, decisions=N
                             ]
                             + ' (ng)'
                         )
-                    if samples[0]['concentrationUnits'].lower() == "nm":
+                    if example_sample['concentrationUnits'].lower() == "nm":
 
                         massColumn["columnHeader"] = (
                             constantColumnFeatures[constantOrderedColumn][
@@ -710,7 +717,7 @@ def build_table(reportTable, samples, constantColumnFeatures, order, decisions=N
                         "dV200",
                         'humanPercentage',
                     ]:
-                        if sample_field_value:
+                        if sample_field_value or sample_field_value == 0.0:
                             try:
                                 responseSample[datafield] = round(
                                     float(sample_field_value), 1
