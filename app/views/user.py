@@ -74,7 +74,6 @@ def login():
         # if the user is part of labmember group
         lab_member = is_lab_member(result)
         project_manager = is_pm(result)
-        # if lab_member:
         full_name = get_user_fullname(result)
         title = get_user_title(result)
         # users are saved with their zzPDL memberships, updated on every login
@@ -261,7 +260,8 @@ def load_username(username, title, full_name, role, groups):
         db.session.commit()
     else:
         user.groups = groups
-        # user.role = role
+        user.role = role
+        user.title = title
         user.login_counter = user.login_counter + 1
         user.login_latest_date = datetime.datetime.now()
         db.session.commit()

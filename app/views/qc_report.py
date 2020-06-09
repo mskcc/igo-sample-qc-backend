@@ -69,7 +69,7 @@ def get_request_samples():
     username = request.args.get("username")
     role = request.args.get("role")
     # users see requests if they are a lab member
-    # if they are associated with request AND if request already has a comment
+    # if they are associated with request AND if request already has a comment    
     user_authorized_for_request = (
         role == "lab_member"
         or is_user_authorized_for_request(request_id, load_user(username))
@@ -1038,13 +1038,12 @@ def tmp_file_exists(file_name):
 # returns true if user is associated with request as recipient
 # returns false if request has no inital comment OR user is not associated
 def is_user_authorized_for_request(request_id, user):
-    commentrelations = CommentRelation.query.filter_by(request_id=request_id)
+    commentrelations = CommentRelation.query.filter_by(request_id=request_id)    
     for relation in commentrelations:
-        # print(relation.recipients)
         # username listed specifically
         if (user.username.lower() in relation.recipients.lower()) or (
             user.username.lower() in relation.author.lower()
-        ):
+        ):        
             return True
         # user is PM and skicmopm recipient (PMs do not use zzPDLs for this to be able to communicate
         # with outside investigators
@@ -1052,11 +1051,19 @@ def is_user_authorized_for_request(request_id, user):
             PM_EMAIL_LIST.lower() in relation.recipients.lower()
             and user.role == "cmo_pm"
         ):
-            return True
+            return True           
         # one of user's groups listed
         for recipient in relation.recipients.split(","):
             if re.sub("@mskcc.org", "", recipient.lower()) in user.groups.lower():
                 return True
+        # SKI email address and username
+        if "ski.mskcc.org" in relation.recipients:        
+            ski_name = user.username[-1] + '-' + user.username[0:len(user.username)-1]
+            if (ski_name.lower() in relation.recipients.lower()) or (
+                ski_name.lower() in relation.author.lower()
+            ):
+                return True
+
     return False
 
 
