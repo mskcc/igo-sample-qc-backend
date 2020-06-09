@@ -623,15 +623,11 @@ def build_table(reportTable, samples, constantColumnFeatures, order, decisions=N
     else:
         example_sample = ""
         for sample in samples:
-                if "hideFromSampleQC" in sample and sample["hideFromSampleQC"] == False:
-                    example_sample = sample
-                    break
-                else:
-                    example_sample = samples[0]
-        
-        
-        
-        
+            if "hideFromSampleQC" in sample and sample["hideFromSampleQC"] == False:
+                example_sample = sample
+                break
+            else:
+                example_sample = samples[0]
         # print(samples)
         # disregard LIMS order and apply order from constants to column feature constant
         for constantOrderedColumn in order:
