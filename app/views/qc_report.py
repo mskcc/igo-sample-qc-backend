@@ -18,7 +18,8 @@ import requests
 import ast
 from datetime import datetime
 import os.path
-import uwsgi, pickle
+import uwsgi
+import pickle
 from openpyxl import Workbook
 from tempfile import NamedTemporaryFile
 import pandas as pd
@@ -68,7 +69,7 @@ def get_request_samples():
     username = request.args.get("username")
     role = request.args.get("role")
     # users see requests if they are a lab member
-    # if they are associated with request AND if request already has a comment
+    # if they are associated with request AND if request already has a comment    
     user_authorized_for_request = (
         role == "lab_member"
         or is_user_authorized_for_request(request_id, load_user(username))
@@ -95,6 +96,7 @@ def get_request_samples():
             responseData = {}
 
             if "samples" in lims_data:
+                print(lims_data)
                 responseData["request"] = {}
                 responseData["request"]["samples"] = []
                 responseData["recipients"] = {}
@@ -104,14 +106,21 @@ def get_request_samples():
                 responseData["request"]["investigatorName"] = lims_data[
                     "investigatorName"
                 ]
+
                 responseData["recipients"]["IGOEmail"] = "zzPDL_CMO_IGO@mskcc.org"
                 responseData["recipients"]["LabHeadEmail"] = lims_data["labHeadEmail"]
                 responseData["recipients"]["InvestigatorEmail"] = lims_data[
                     "investigatorEmail"
                 ]
-                responseData["recipients"]["OtherContactEmails"] = lims_data[
-                    "otherContactEmails"
-                ]
+
+                if "qcAccessEmails" in lims_data and lims_data["qcAccessEmails"] != "":
+                    responseData["recipients"]["QcAccessEmails"] = lims_data[
+                        "qcAccessEmails"
+                    ]
+                else:
+                    responseData["recipients"]["OtherContactEmails"] = lims_data[
+                        "otherContactEmails"
+                    ]
 
                 # we only need Investigator Sample Ids
                 for sample in lims_data["samples"]:
@@ -151,11 +160,15 @@ def get_qc_report_samples():
     data['samples'] = samples
 
     is_lab_member = user.role == "lab_member"
+    is_cmo_pm = user.role == "cmo_pm"
+    
+    # is_cmo_pm = user.role == ""
     reports = []
     if is_lab_member:
         is_authorized_for_request = True
     else:
-        is_authorized_for_request = is_user_authorized_for_request(request_id, user)
+        is_authorized_for_request = is_user_authorized_for_request(
+            request_id, user)
 
     if not is_lab_member and not is_authorized_for_request:
         return make_response(
@@ -171,12 +184,14 @@ def get_qc_report_samples():
             data=data,
         )
         # print(r.json())
-
+        is_cmo_pm_only = False
+        is_cmo_pm_only_and_not_pm_user = False
         # if not lab member but auth'd, get commentrelations and only show reports that are ready
         if not is_lab_member and is_authorized_for_request:
             comment_relations = CommentRelation.query.filter(
                 CommentRelation.request_id == request_id
             )
+            
             # print(comment_relations)
             if comment_relations:
 
@@ -186,6 +201,8 @@ def get_qc_report_samples():
                     # print(comment_relation.report)
                     reports.append(str(comment_relation.report))
         # print(reports, 'reports')
+            is_cmo_pm_only = comment_relation.is_cmo_pm_project
+            is_cmo_pm_only_and_not_pm_user = comment_relation.is_cmo_pm_project and not is_cmo_pm
         return_text = ""
         if r.status_code == 200:
             # assemble table data
@@ -206,12 +223,13 @@ def get_qc_report_samples():
                     if is_lab_member or (
                         is_authorized_for_request and "DNA Report" in reports
                     ):
-                        read_only = is_investigator_decision_read_only(
+                        read_only = is_decision_made(
                             lims_data[field], is_lab_member
-                        )
+                        ) or is_cmo_pm_only_and_not_pm_user
                         dnaColumns = constants.dnaColumns
                         dnaColumns["InvestigatorDecision"]["readOnly"] = read_only
-                        constantColumnFeatures = mergeColumns(sharedColumns, dnaColumns)
+                        constantColumnFeatures = mergeColumns(
+                            sharedColumns, dnaColumns)
                         tables[field] = build_table(
                             field,
                             lims_data[field],
@@ -220,6 +238,7 @@ def get_qc_report_samples():
                             decisions,
                         )
                         tables[field]["readOnly"] = read_only
+                        tables[field]["isCmoPmProject"] = is_cmo_pm_only
                         # print(lims_data[field])
 
                 if field == "rnaReportSamples":
@@ -227,12 +246,13 @@ def get_qc_report_samples():
                     if is_lab_member or (
                         is_authorized_for_request and "RNA Report" in reports
                     ):
-                        read_only = is_investigator_decision_read_only(
+                        read_only = is_decision_made(
                             lims_data[field], is_lab_member
-                        )
+                        ) or is_cmo_pm_only_and_not_pm_user
                         rnaColumns = constants.rnaColumns
                         rnaColumns["InvestigatorDecision"]["readOnly"] = read_only
-                        constantColumnFeatures = mergeColumns(sharedColumns, rnaColumns)
+                        constantColumnFeatures = mergeColumns(
+                            sharedColumns, rnaColumns)
                         tables[field] = build_table(
                             field,
                             lims_data[field],
@@ -241,14 +261,15 @@ def get_qc_report_samples():
                             decisions,
                         )
                         tables[field]["readOnly"] = read_only
+                        tables[field]["isCmoPmProject"] = is_cmo_pm_only
 
                 if field == "libraryReportSamples":
                     if is_lab_member or (
                         is_authorized_for_request and "Library Report" in reports
                     ):
-                        read_only = is_investigator_decision_read_only(
+                        read_only = is_decision_made(
                             lims_data[field], is_lab_member
-                        )
+                        ) or is_cmo_pm_only_and_not_pm_user
                         libraryColumns = constants.libraryColumns
                         libraryColumns["InvestigatorDecision"]["readOnly"] = read_only
                         constantColumnFeatures = mergeColumns(
@@ -262,14 +283,17 @@ def get_qc_report_samples():
                             decisions,
                         )
                         tables[field]["readOnly"] = read_only
+                        tables[field]["isCmoPmProject"] = is_cmo_pm_only
 
                 if field == "poolReportSamples":
                     if is_lab_member or (
                         is_authorized_for_request and "Pool Report" in reports
                     ):
-                        read_only = is_investigator_decision_read_only(
+                        read_only = is_decision_made(
                             lims_data[field], is_lab_member
-                        )
+                        ) or is_cmo_pm_only_and_not_pm_user 
+                        
+                        # pm_only = is_decision_for_pms_only(is_pm, )
                         poolColumns = constants.poolColumns
                         poolColumns["InvestigatorDecision"]["readOnly"] = read_only
                         constantColumnFeatures = mergeColumns(
@@ -283,6 +307,8 @@ def get_qc_report_samples():
                             decisions,
                         )
                         tables[field]["readOnly"] = read_only
+                        tables[field]["isCmoPmProject"] = is_cmo_pm_only
+                        
 
                 if field == "pathologyReportSamples":
                     if is_lab_member or (
@@ -340,7 +366,9 @@ def set_qc_investigator_decision():
             request_id=request_id, report=report
         ).first()
 
-        decision_to_save = Decision.query.filter_by(request_id=request_id).first()
+        decision_to_save = Decision.query.filter_by(
+            comment_relation_id=comment_relation.id
+        ).first()
         if not decision_to_save:
             decision_to_save = Decision(
                 report=(report),
@@ -593,6 +621,13 @@ def build_table(reportTable, samples, constantColumnFeatures, order, decisions=N
     if not samples:
         return {}
     else:
+        example_sample = ""
+        for sample in samples:
+            if "hideFromSampleQC" in sample and sample["hideFromSampleQC"] == False:
+                example_sample = sample
+                break
+            else:
+                example_sample = samples[0]
         # print(samples)
         # disregard LIMS order and apply order from constants to column feature constant
         for constantOrderedColumn in order:
@@ -611,13 +646,14 @@ def build_table(reportTable, samples, constantColumnFeatures, order, decisions=N
                     )
 
                 elif constantOrderedColumn == "Concentration":
+                    
                     concentrationColumn = copy.deepcopy(
                         constantColumnFeatures[constantOrderedColumn]
                     )
                     concentrationColumn["columnHeader"] = (
                         constantColumnFeatures[constantOrderedColumn]["columnHeader"]
                         + ' ('
-                        + samples[0]['concentrationUnits']
+                        + example_sample['concentrationUnits']
                         + ')'
                     )
                     responseColumnFeatures.append(concentrationColumn)
@@ -626,7 +662,7 @@ def build_table(reportTable, samples, constantColumnFeatures, order, decisions=N
                     massColumn = copy.deepcopy(
                         constantColumnFeatures[constantOrderedColumn]
                     )
-                    if samples[0]['concentrationUnits'].lower() == "ng/ul":
+                    if example_sample['concentrationUnits'].lower() == "ng/ul":
 
                         massColumn["columnHeader"] = (
                             constantColumnFeatures[constantOrderedColumn][
@@ -634,7 +670,7 @@ def build_table(reportTable, samples, constantColumnFeatures, order, decisions=N
                             ]
                             + ' (ng)'
                         )
-                    if samples[0]['concentrationUnits'].lower() == "nm":
+                    if example_sample['concentrationUnits'].lower() == "nm":
 
                         massColumn["columnHeader"] = (
                             constantColumnFeatures[constantOrderedColumn][
@@ -666,15 +702,15 @@ def build_table(reportTable, samples, constantColumnFeatures, order, decisions=N
                     + "' class ='download-icon'><i class=%s>%s</i></div>"
                     % ("material-icons", "cloud_download")
                 )
-
             for datafield in sample:
                 datafield_formatted = datafield[0].upper() + datafield[1:]
                 sample_field_value = sample[datafield]
-
+                
                 if datafield_formatted in order:
                     if datafield == "otherSampleId" and (",") in sample_field_value:
 
-                        sample_field_value = sample_field_value.replace(',', ', ')
+                        sample_field_value = sample_field_value.replace(
+                            ',', ', ')
                         responseSample[datafield] = sample_field_value.replace(
                             '-', '&#8209;'
                         )
@@ -685,7 +721,8 @@ def build_table(reportTable, samples, constantColumnFeatures, order, decisions=N
                             recommendation.lower(),
                             recommendation,
                         )
-                    # round measurments to 1 decimal
+                    # round measurements to 1 decimal
+                    
                     elif datafield in [
                         "concentration",
                         "totalMass",
@@ -694,15 +731,21 @@ def build_table(reportTable, samples, constantColumnFeatures, order, decisions=N
                         "dV200",
                         'humanPercentage',
                     ]:
-                        if sample_field_value:
-                            responseSample[datafield] = round(
-                                float(sample_field_value), 1
-                            )
+                        if sample_field_value or sample_field_value == 0.0:
+                            try:
+                                responseSample[datafield] = round(
+                                    float(sample_field_value), 1
+                                )
+                            except:
+                                responseSample[datafield] = sample_field_value
                     elif datafield == "volume" or datafield == "avgSize":
                         if sample_field_value:
-                            responseSample[datafield] = round(
-                                float(sample_field_value), 0
-                            )
+                            try:
+                                responseSample[datafield] = round(
+                                    float(sample_field_value), 0
+                                )
+                            except:
+                                responseSample[datafield] = sample_field_value
                     elif datafield == "action":
                         responseSample[datafield] = (
                             "<div class ='download-icon'><i class=%s>%s</i></div>"
@@ -781,7 +824,8 @@ def build_table(reportTable, samples, constantColumnFeatures, order, decisions=N
 
 def get_decisions_for_request(request_id):
     decisions_response = []
-    decisions = Decision.query.filter_by(request_id=request_id, is_submitted=False)
+    decisions = Decision.query.filter_by(
+        request_id=request_id, is_submitted=False)
     # for x in decisions:
     #     decisions_response.append(x.serialize)
     return decisions
@@ -798,7 +842,8 @@ def build_pending_list(pendings):
         #         print(pending.request_id, pending.report, pending.id, pending.decision.is_submitted )
         responsePending = {}
         responsePending["request_id"] = pending.request_id
-        responsePending["date"] = pending.date_created.strftime("%m/%d/%Y, %H:%M:%S")
+        responsePending["date"] = pending.date_created.strftime(
+            "%m/%d/%Y, %H:%M:%S")
         if pending.children:
             responsePending["most_recent_date"] = pending.children[
                 -1
@@ -838,8 +883,13 @@ def build_pending_list(pendings):
     for decision in unsubmitted_decisions:
         # print(decision)
         # print(decision.comment_relation_id)
-        if (decision):
-            pending = CommentRelation.query.get(decision.comment_relation_id)
+        if decision:
+            try:
+                pending = CommentRelation.query.get(
+                    decision.comment_relation_id)
+            except:
+                log_info(traceback.print_exc())
+                continue
             # if not pending.decision or pending.decision.is_submitted == False:
             #     if pending.decision.is_submitted == False:
             #         print(pending.request_id, pending.report, pending.id, pending.decision.is_submitted )
@@ -847,7 +897,9 @@ def build_pending_list(pendings):
             # print(pending.serialize)
             responsePending = {}
             responsePending["request_id"] = pending.request_id
-            responsePending["date"] = pending.date_created.strftime("%m/%d/%Y, %H:%M:%S")
+            responsePending["date"] = pending.date_created.strftime(
+                "%m/%d/%Y, %H:%M:%S"
+            )
             responsePending["most_recent_date"] = pending.children[
                 -1
             ].date_created.strftime("%m/%d/%Y, %H:%M:%S")
@@ -904,7 +956,8 @@ def build_user_pending_list(pendings):
         # print(pending.serialize)
         responsePending = {}
         responsePending["request_id"] = pending.request_id
-        responsePending["date"] = pending.date_created.strftime("%m/%d/%Y, %H:%M:%S")
+        responsePending["date"] = pending.date_created.strftime(
+            "%m/%d/%Y, %H:%M:%S")
         if pending.children:
             responsePending["most_recent_date"] = pending.children[
                 -1
@@ -944,7 +997,8 @@ def build_attachment_list(field, attachments):
         responseAttachment = {}
         responseAttachment["fileName"] = attachment["fileName"]
         responseAttachment["recordId"] = attachment["recordId"]
-        responseAttachment["action"] = "Download " + str(attachment["recordId"])
+        responseAttachment["action"] = "Download " + \
+            str(attachment["recordId"])
         responseAttachments.append(responseAttachment)
 
     return {
@@ -984,29 +1038,41 @@ def tmp_file_exists(file_name):
 # returns true if user is associated with request as recipient
 # returns false if request has no inital comment OR user is not associated
 def is_user_authorized_for_request(request_id, user):
-    commentrelations = CommentRelation.query.filter_by(request_id=request_id)
+    commentrelations = CommentRelation.query.filter_by(request_id=request_id)    
     for relation in commentrelations:
         # username listed specifically
         if (user.username.lower() in relation.recipients.lower()) or (
             user.username.lower() in relation.author.lower()
-        ):
+        ):        
             return True
         # user is PM and skicmopm recipient (PMs do not use zzPDLs for this to be able to communicate
-        # with outside invastigators
+        # with outside investigators
         if (
             PM_EMAIL_LIST.lower() in relation.recipients.lower()
-            and PM_ZZPDL.lower() in user.groups.lower()
+            and user.role == "cmo_pm"
         ):
-            return True
+            return True           
         # one of user's groups listed
         for recipient in relation.recipients.split(","):
             if re.sub("@mskcc.org", "", recipient.lower()) in user.groups.lower():
                 return True
+        # SKI email address and username
+        if "ski.mskcc.org" in relation.recipients:        
+            ski_name = user.username[-1] + '-' + user.username[0:len(user.username)-1]
+            if (ski_name.lower() in relation.recipients.lower()) or (
+                ski_name.lower() in relation.author.lower()
+            ):
+                return True
+
     return False
 
 
 # iterate over lims returned investigator decisions, set column to be editable if at least one decision is unfilled
-def is_investigator_decision_read_only(data, is_lab_member):
+def is_decision_made(data, is_lab_member):
+    #  readOnly true WHEN:
+    # - decisions made
+    # - person is lab member
+    # - person is user but qcaccessemail field has only pm email
     for field in data:
         if not field["investigatorDecision"] and field["hideFromSampleQC"] != True:
             return False

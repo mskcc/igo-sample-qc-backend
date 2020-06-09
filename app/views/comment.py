@@ -50,9 +50,11 @@ def add_and_notify_initial():
                 payload["recipients"],
                 payload["request_id"],
                 payload["decisions_made"],
+                payload["is_cmo_pm_project"],
                 # add decisionsmade object
                 user,
             )
+            is_cmo_pm_project = payload["is_cmo_pm_project"]
             is_pathology_report = report == "Pathology Report"
             if comment_relation:
                 if (
@@ -63,7 +65,7 @@ def add_and_notify_initial():
                 else:
                     is_decided = False
                 notify.send_initial_notification(
-                    set(comment_relation.recipients.split(',')), payload["request_id"], report, user, is_decided, is_pathology_report
+                    set(comment_relation.recipients.split(',')), payload["request_id"], report, user, is_decided, is_pathology_report, is_cmo_pm_project
                 )
             else:
                 responseObject = {'message': "Failed to save comment"}
@@ -303,7 +305,7 @@ def load_comments_for_request(request_id):
 
 #  saves initial new comment and relation and returns recipients to send notification to
 def save_initial_comment_and_relation(
-    comment, report, recipients, request_id, decisions_made, user
+    comment, report, recipients, request_id, decisions_made, is_cmo_pm_project, user
 ):  
     comment_relation = (
         CommentRelation.query.filter(CommentRelation.request_id == request_id)
@@ -317,6 +319,7 @@ def save_initial_comment_and_relation(
             request_id=request_id,
             report=report,
             recipients=recipients,
+            is_cmo_pm_project= is_cmo_pm_project,
             date_created=datetime.now(),
             date_updated=datetime.now(),
         )

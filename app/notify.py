@@ -17,26 +17,27 @@ ENV = app.config["ENV"]
 
 
 def send_initial_notification(
-    recipients, request_id, report, author, is_decided, is_pathology_report
+    recipients, request_id, report, author, is_decided, is_pathology_report, is_cmo_pm_project
 ):
     template = constants.initial_email_template_html
+    if is_cmo_pm_project == True:
+        body = template["cmo_pm_body"] % (report.split(' ')[0], request_id, request_id, request_id)
+    else:
+        body = template["body"] % (report.split(' ')[0], request_id, request_id, request_id) 
     if ENV == 'development':
         content = (
-            template["body"]
-            % (report.split(' ')[0], request_id, request_id, request_id)
+            body
             + template["footer"] % (author.full_name, author.title)
             + "<br><br>In production, this email would have been sent to:"
             + ", ".join(recipients)
             + "<br><br>"
             + str(constants.user_training_string)
         )
-
         recipients = [
             "wagnerl@mskcc.org",
             "patrunoa@mskcc.org",
             author.username + "@mskcc.org",
         ]
-
         recipients = set(recipients)
     else:
         content = (
@@ -49,7 +50,7 @@ def send_initial_notification(
 
     msg = MIMEText(content, "html")
 
-    if is_decided or is_pathology_report:
+    if is_decided or is_pathology_report or is_cmo_pm_project:
         msg['Subject'] = template["subject"] % (request_id, report.split(' ')[0], "")
     else:
         msg['Subject'] = template["subject"] % (
@@ -70,6 +71,7 @@ def send_initial_notification(
     msg['To'] = ', '.join(recipients)
 
     # Send the message via our own SMTP server.
+
     s = smtplib.SMTP('localhost')
     s.sendmail(sender_email, all_recipients, msg.as_string())
     s.close()
