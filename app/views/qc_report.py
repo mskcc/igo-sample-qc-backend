@@ -96,7 +96,6 @@ def get_request_samples():
             responseData = {}
 
             if "samples" in lims_data:
-                print(lims_data)
                 responseData["request"] = {}
                 responseData["request"]["samples"] = []
                 responseData["recipients"] = {}
@@ -217,7 +216,6 @@ def get_qc_report_samples():
             # sharedColumns["InvestigatorDecision"]["readOnly"] = read_only
             decisions = get_decisions_for_request(request_id)
             for field in lims_data:
-
                 if field == "dnaReportSamples":
 
                     if is_lab_member or (
@@ -320,6 +318,18 @@ def get_qc_report_samples():
                             lims_data[field],
                             constantColumnFeatures,
                             constants.pathologyOrder,
+                        )
+
+                if field == "covidReportSamples":
+                    if is_lab_member or (
+                        is_authorized_for_request and "COVID19 Report" in reports
+                    ):
+                        constantColumnFeatures = constants.covidColumns
+                        tables[field] = build_table(
+                            field,
+                            lims_data[field],
+                            constantColumnFeatures,
+                            constants.covidOrder,
                         )
 
                 if field == "attachments":
@@ -730,6 +740,9 @@ def build_table(reportTable, samples, constantColumnFeatures, order, decisions=N
                         "din",
                         "dV200",
                         'humanPercentage',
+                        "cqN1",
+                        "cqN2",
+                        "cqRP"
                     ]:
                         if sample_field_value or sample_field_value == 0.0:
                             try:
@@ -775,19 +788,11 @@ def build_table(reportTable, samples, constantColumnFeatures, order, decisions=N
                                                 and "investigatorDecision"
                                                 in decided_sample
                                             ):
-                                                print(
-                                                    decided_sample[
-                                                        "investigatorDecision"
-                                                    ]
-                                                )
+                                                
                                                 decided_sample[
                                                     "investigatorDecision"
                                                 ] = sample_field_value
-                                                print(
-                                                    decided_sample[
-                                                        "investigatorDecision"
-                                                    ]
-                                                )
+                                                
 
                                                 db.session.commit()
 
