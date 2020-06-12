@@ -331,6 +331,7 @@ def get_qc_report_samples():
                             constantColumnFeatures,
                             constants.covidOrder,
                         )
+                        tables[field]["readOnly"] = True
 
                 if field == "attachments":
                     constantColumnFeatures = constants.attachmentColumns
