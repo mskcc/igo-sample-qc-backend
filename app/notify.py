@@ -17,10 +17,12 @@ ENV = app.config["ENV"]
 
 
 def send_initial_notification(
-    recipients, request_id, report, author, is_decided, is_pathology_report, is_cmo_pm_project
+    recipients, request_id, report, author, is_decided, is_pathology_report, is_covid_report, is_cmo_pm_project
 ):
     template = constants.initial_email_template_html
-    if is_cmo_pm_project == True:
+    if is_covid_report:
+        body = template["covid_body"] % (report.split(' ')[0], request_id, request_id, request_id) 
+    elif is_cmo_pm_project == True:
         body = template["cmo_pm_body"] % (report.split(' ')[0], request_id, request_id, request_id)
     else:
         body = template["body"] % (report.split(' ')[0], request_id, request_id, request_id) 
@@ -36,6 +38,7 @@ def send_initial_notification(
         recipients = [
             "wagnerl@mskcc.org",
             "patrunoa@mskcc.org",
+            "lisa.wagner91@gmail.com",
             author.username + "@mskcc.org",
         ]
         recipients = set(recipients)
@@ -50,8 +53,11 @@ def send_initial_notification(
 
     msg = MIMEText(content, "html")
 
-    if is_decided or is_pathology_report or is_cmo_pm_project:
+    if is_covid_report:
+        msg['Subject'] = template["covid_subject"] % (request_id, report.split(' ')[0], "")
+    elif is_decided or is_pathology_report or is_cmo_pm_project:
         msg['Subject'] = template["subject"] % (request_id, report.split(' ')[0], "")
+    
     else:
         msg['Subject'] = template["subject"] % (
             request_id,

@@ -56,16 +56,17 @@ def add_and_notify_initial():
             )
             is_cmo_pm_project = payload["is_cmo_pm_project"]
             is_pathology_report = report == "Pathology Report"
+            is_covid_report = report == "COVID19 Report"
             if comment_relation:
                 if (
                     comment_relation.decision
                     and comment_relation.decision[0].is_igo_decision
-                ):
+                ) or is_covid_report :
                     is_decided = True
                 else:
                     is_decided = False
                 notify.send_initial_notification(
-                    set(comment_relation.recipients.split(',')), payload["request_id"], report, user, is_decided, is_pathology_report, is_cmo_pm_project
+                    set(comment_relation.recipients.split(',')), payload["request_id"], report, user, is_decided, is_pathology_report,is_covid_report, is_cmo_pm_project
                 )
             else:
                 responseObject = {'message': "Failed to save comment"}
@@ -153,7 +154,6 @@ def add_and_notify():
 @jwt_required
 def add_to_all_and_notify():
     payload = request.get_json()['data']
-    print(payload)
     try:
         recipients = []
         user = User.query.filter_by(username=payload["comment"]["username"]).first()
@@ -276,6 +276,7 @@ def load_comments_for_request(request_id):
             "Pool Report": {"comments": [], "recipients": ""},
             "Library Report": {"comments": [], "recipients": ""},
             "Pathology Report": {"comments": [], "recipients": ""},
+            "COVID19 Report": {"comments": [], "recipients": ""},
         }
 
         for comment_relation in comment_relations:
