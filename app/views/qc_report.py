@@ -725,6 +725,11 @@ def build_table(reportTable, samples, constantColumnFeatures, order, decisions=N
                         responseSample[datafield] = sample_field_value.replace(
                             '-', '&#8209;'
                         )
+
+                    if reportTable== "covidReportSamples" and datafield == "userSampleId" and ("IGO") in sample_field_value:
+                        otherSampleId = sample["otherSampleId"]                       
+                        sample_field_value =  re.sub(r'-IGO-.*$', '', otherSampleId) 
+                        responseSample[datafield] = sample_field_value
                     elif datafield == "igoQcRecommendation":
                         recommendation = sample_field_value
 
