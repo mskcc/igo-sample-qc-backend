@@ -41,7 +41,7 @@ class User(db.Model):
     __tablename__ = "users"
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    full_name = db.Column(db.String(40), nullable=True)
+    full_name = db.Column(db.String(100), nullable=True)
     username = db.Column(db.String(40), nullable=False, unique=True)
     title = db.Column(db.String(40), nullable=True)
     role = db.Column(db.String(40), nullable=True)

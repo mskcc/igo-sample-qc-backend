@@ -117,7 +117,6 @@ def add_and_notify():
                 )
                 recipients = recipients.split(",")
                 recipients = set(recipients)
-                # recipients.discard("zzPDL_CMO_IGO@mskcc.org")
                 notify.send_notification(
                     recipients,
                     payload["comment"],

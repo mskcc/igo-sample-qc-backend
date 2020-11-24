@@ -106,7 +106,7 @@ def get_request_samples():
                     "investigatorName"
                 ]
 
-                responseData["recipients"]["IGOEmail"] = "zzPDL_CMO_IGO@mskcc.org"
+                responseData["recipients"]["IGOEmail"] = "zzPDL_IGO_Staff@mskcc.org"
                 responseData["recipients"]["LabHeadEmail"] = lims_data["labHeadEmail"]
                 responseData["recipients"]["InvestigatorEmail"] = lims_data[
                     "investigatorEmail"
@@ -212,7 +212,7 @@ def get_qc_report_samples():
             sharedColumns = constants.sharedColumns
             # check if at least one investigator decision still has to be made
 
-            # read_only = False
+            read_only = True
             # sharedColumns["InvestigatorDecision"]["readOnly"] = read_only
             decisions = get_decisions_for_request(request_id)
             for field in lims_data:
@@ -331,6 +331,7 @@ def get_qc_report_samples():
                             constantColumnFeatures,
                             constants.covidOrder,
                         )
+                        read_only = True
                         tables[field]["readOnly"] = True
 
                 if field == "attachments":
@@ -1005,6 +1006,9 @@ def build_attachment_list(field, attachments):
     responseAttachments = []
 
     for attachment in attachments:
+        if "hideFromSampleQC" in attachment and attachment["hideFromSampleQC"] == True:
+            continue
+
         responseAttachment = {}
         responseAttachment["fileName"] = attachment["fileName"]
         responseAttachment["recordId"] = attachment["recordId"]
