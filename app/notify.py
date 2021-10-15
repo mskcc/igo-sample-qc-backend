@@ -105,7 +105,6 @@ def send_notification(recipients, comment, request_id, report, author):
             + str(constants.user_training_string)
         )
         recipients = [
-            "wagnerl@mskcc.org",
             "patrunoa@mskcc.org",
             author.username + "@mskcc.org",
         ]
