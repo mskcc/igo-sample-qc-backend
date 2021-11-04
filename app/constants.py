@@ -118,6 +118,12 @@ dnaColumns = {
         "trimDropdown": "false",
         "picklistName": "InvestigatorDecisionCustomers",
     },
+    "SourceSampleId": {
+        "limsField": "SourceSampleId",
+        "data": "sourceSampleId",
+        "columnHeader": "Source Sample ID",
+        "readOnly": "true",
+    }
 }
 
 rnaColumns = {
@@ -150,6 +156,12 @@ rnaColumns = {
         "trimDropdown": "false",
         "picklistName": "InvestigatorDecisionCustomers",
     },
+     "SourceSampleId": {
+        "limsField": "SourceSampleId",
+        "data": "sourceSampleId",
+        "columnHeader": "Source Sample ID",
+        "readOnly": "true",
+    }
 }
 
 libraryColumns = {
@@ -176,6 +188,12 @@ libraryColumns = {
         "trimDropdown": "false",
         "picklistName": "InvestigatorDecisionCustomers",
     },
+     "SourceSampleId": {
+        "limsField": "SourceSampleId",
+        "data": "sourceSampleId",
+        "columnHeader": "Source Sample ID",
+        "readOnly": "true",
+    }
 }
 
 poolColumns = {
@@ -318,6 +336,7 @@ dnaOrder = [
     "HumanPercentage",
     "TumorOrNormal",
     "Preservation",
+    "SourceSampleId",
     "RecordId",
 ]
 
@@ -335,6 +354,7 @@ rnaOrder = [
     "DV200",
     "Preservation",
     "Rqn",
+    "SourceSampleId",
     "RecordId",
 ]
 
@@ -350,6 +370,7 @@ libraryOrder = [
     "Volume",
     "TotalMass",
     "TumorOrNormal",
+    "SourceSampleId",
     "RecordId",
 ]
 
