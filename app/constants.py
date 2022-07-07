@@ -442,4 +442,12 @@ decision_notification_email_template_html = {
     "footer": "<br><a style='color:#f29934; font-weight:bold;' href='http://cmo.mskcc.org/cmo/igo/'>Integrated Genomics Operation</a><br><a href='https://www.mskcc.org'>Memorial Sloan Kettering Cancer Center</a><br>T 646.888.3765<br>Follow us on <a href='https://www.instagram.com/genomics212/?hl=en'>Instagram</a> and <a href='https://twitter.com/genomics212?lang=en'>Twitter</a>!<br>",
 }
 
+decision_reminder_notification_email_template_html = {
+    "from": "igoski@mskcc.org",
+    "dev_subject": "[SampleQC Beta-Test] Sample Decision Reminder for %s",
+    "subject": "[IGO SampleQC] Sample Decision Reminder for %s",
+    "body": "Hello,<br><br>This is a reminder that a decision needs to be made for project %s.<br><br> You can find the project at <a href='https://igo.mskcc.org/sample-qc/request/%s'>igo.mskcc.org/sample-qc/request/%s</a>.<br><br>Thank you,",
+    "footer": "<br><a style='color:#f29934; font-weight:bold;' href='http://cmo.mskcc.org/cmo/igo/'>Integrated Genomics Operation</a><br><a href='https://www.mskcc.org'>Memorial Sloan Kettering Cancer Center</a><br>T 646.888.3765<br>Follow us on <a href='https://www.instagram.com/genomics212/?hl=en'>Instagram</a> and <a href='https://twitter.com/genomics212?lang=en'>Twitter</a>!<br>",
+}
+
 user_training_string = "Unfamiliar with this new process for sharing QC results? Watch our 5 minute <a href='https://igo.mskcc.org/sample-qc/instructions'>how-to video</a>."

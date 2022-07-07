@@ -207,6 +207,58 @@ def send_decision_notification(decision, decision_user, recipients, initial_auth
     log_email(msg.as_string(), decision_user.username, "Decision")
     return "done"
 
+def send_decision_reminder_notification(request_id, recipients):
+    template = constants.decision_reminder_notification_email_template_html
+    if ENV == 'development':
+        content = (
+            template["body"]
+            % (
+                request_id,
+                request_id,
+                request_id,
+            )
+            + template["footer"]
+            + "<br><br>In production, this email would have been sent to:"
+            + ", ".join(recipients)
+            + "<br><br>"
+        )
+        recipients = [
+            "delbels@mskcc.org",
+        ]
+        recipients = set(recipients)
+    else:
+        content = (
+            template["body"]
+            % (
+                request_id,
+                request_id,
+                request_id,
+            )
+            + template["footer"]
+            + "<br><br>"
+        )
+    # receiver_email = recipients
+    # print(recipients, "send_decision_notification")
+    sender_email = NOTIFICATION_SENDER
+    # print(receiver_email.split(","))
+
+    msg = MIMEText(content, "html")
+    msg['Subject'] = template["subject"] % (request_id)
+
+    msg['From'] = sender_email
+    all_recipients = recipients.copy()
+
+    if IGO_EMAIL in recipients:
+        recipients.discard(IGO_EMAIL)
+
+    # the email header's "to" field is for display only, the actual to address is in the sendmail() params
+    msg['To'] = ', '.join(recipients)
+    # Send the message via our own SMTP server.
+    s = smtplib.SMTP('localhost')
+    s.sendmail(sender_email, all_recipients, msg.as_string())
+    s.close()
+    log_email(msg.as_string(), request_id, "Decision Reminder")
+    return "done"
 
 def send_feedback(recipients, body, subject, type):
     receiver_email = recipients
