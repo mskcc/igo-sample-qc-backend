@@ -77,6 +77,8 @@ def login():
         full_name = get_user_fullname(result)
         title = get_user_title(result)
         # users are saved with their zzPDL memberships, updated on every login
+        if username.lower() == 'mirhajf' or 'dunigunm' or 'brennane':
+            lab_member = False
         if lab_member:
             log_info('lab_member user logged in: ' + username)
             user = load_username(
