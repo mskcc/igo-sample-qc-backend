@@ -55,8 +55,8 @@ SQLALCHEMY_DATABASE_URI = "mysql+pymysql://sample_qc_dev_user1:napkinWatermelon1
 
 How to create mySQL users and grant privileges (do this within `mysql>` server):
 ```
-# CREATE USER 'sample_qc_dev_user1'@'localhost' IDENTIFIED BY 'napkinWatermelon1Dev!';
-# GRANT ALL PRIVILEGES ON dev_sample_qc.* TO 'sample_qc_dev_user1'@'localhost';
+# CREATE USER 'sample_qc_dev_user'@'localhost' IDENTIFIED BY 'napkinWatermelon1Dev!';
+# GRANT ALL PRIVILEGES ON dev_sample_qc.* TO 'sample_qc_dev_user'@'localhost';
 ```
 
 [Look here for more info on how you can add/remove users from your MySQL server](https://sebhastian.com/mysql-error-1396/)
