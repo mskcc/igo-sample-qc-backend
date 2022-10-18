@@ -3,7 +3,10 @@
 ## Deploying on a server <br>
 Clone the repository to a path under your local folder. 
 Pull the changes you wish to deploy.
-Move them over to the corresponding file under /srv/www/sample-qc/sample-qc-backend/ and then restart uwsgi with dzdo systemctl restart uwsgi.
+Move them over to the corresponding file under /srv/www/sample-qc/sample-qc-backend/ and then restart uwsgi with 
+```
+dzdo systemctl restart uwsgi.
+```
 
 Sample QC backend runs on Python. You will have to follow this set up if it's your first time running this project locally.
 
