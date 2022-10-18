@@ -414,17 +414,17 @@ def set_qc_investigator_decision():
                 'message': "Failed to submit. Please contact an admin by emailing zzPDL_SKI_IGO_DATA@mskcc.org"
             }
             return make_response(jsonify(responseObject), 400, None)
-        else:
+        elif "Stop processing" in decision_to_save:
+                notify.send_stop_processing_notification(
+                decision_to_save,
+                decision_user)
+        else:    
             notify.send_decision_notification(
                 decision_to_save,
                 decision_user,
                 set(comment_relation.recipients.split(",")),
                 comment_relation.author,
             )
-            if "Stop processing" in decision_to_save:
-                notify.send_stop_processing_notification(
-                decision_to_save,
-                decision_user)
 
             db.session.commit()
             responseObject = {'message': "Submitted."}
