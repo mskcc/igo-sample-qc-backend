@@ -16,8 +16,6 @@ from secret_config import TEST_EMAIL, WATCHER
 NOTIFICATION_SENDER = app.config["NOTIFICATION_SENDER"]
 IGO_EMAIL = app.config["IGO_EMAIL"]
 IGO_BILLER = app.config["IGO_BILLER"]
-TEST_EMAIL = app.config["TEST_EMAIL"]
-WATCHER = app.config["WATCHER"]
 ENV = app.config["ENV"]
 
 
@@ -250,9 +248,9 @@ def send_stop_processing_notification(decision, decision_user):
     msg['From'] = NOTIFICATION_SENDER
 
     # the email header's "to" field is for display only, the actual to address is in the sendmail() params
-    msg['To'] = IGO_BILLER,TEST_EMAIL,WATCHER
+    msg['To'] = IGO_BILLER
 
     s = smtplib.SMTP('localhost')
-    s.sendmail(NOTIFICATION_SENDER, IGO_BILLER, msg.as_string())
+    s.sendmail(NOTIFICATION_SENDER, IGO_BILLER.split(","), msg.as_string())
     s.close()
     return "Sent notification to biller for manual charge addition." 
