@@ -37,8 +37,8 @@ def send_initial_notification(
             + str(constants.user_training_string)
         )
         recipients = [
-            "patrunoa@mskcc.org",
-            "apatruno618@gmail.com",
+            "delbels@mskcc.org",
+            "mirhajf@mskcc.org",
             author.username + "@mskcc.org",
         ]
         recipients = set(recipients)
@@ -106,7 +106,8 @@ def send_notification(recipients, comment, request_id, report, author):
             + str(constants.user_training_string)
         )
         recipients = [
-            "patrunoa@mskcc.org",
+            "delbels@mskcc.org",
+            "mirhajf@mskcc.org",
             author.username + "@mskcc.org",
         ]
         recipients = set(recipients)
@@ -167,6 +168,7 @@ def send_decision_notification(decision, decision_user, recipients, initial_auth
         )
         recipients = [
             "delbels@mskcc.org",
+            "mirhajf@mskcc.org",
             initial_author + "@mskcc.org",
         ]
         recipients = set(recipients)
