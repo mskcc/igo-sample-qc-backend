@@ -7,12 +7,15 @@ from email.mime.text import MIMEText
 from email.message import EmailMessage
 from datetime import datetime
 
+from secret_config import TEST_EMAIL, WATCHER
+
 # NOTIFICATION MODULE
 # notifications are sent to recipients selected in initial report editor,
 # editor is pre-filled with request level email information
 # cmo_igo is pulled from recipients and bcc'd
 NOTIFICATION_SENDER = app.config["NOTIFICATION_SENDER"]
 IGO_EMAIL = app.config["IGO_EMAIL"]
+IGO_BILLER = app.config["IGO_BILLER"]
 ENV = app.config["ENV"]
 
 
@@ -36,8 +39,8 @@ def send_initial_notification(
             + str(constants.user_training_string)
         )
         recipients = [
-            "patrunoa@mskcc.org",
-            "apatruno618@gmail.com",
+            "delbels@mskcc.org",
+            "mirhajf@mskcc.org",
             author.username + "@mskcc.org",
         ]
         recipients = set(recipients)
@@ -105,7 +108,8 @@ def send_notification(recipients, comment, request_id, report, author):
             + str(constants.user_training_string)
         )
         recipients = [
-            "patrunoa@mskcc.org",
+            "delbels@mskcc.org",
+            "mirhajf@mskcc.org",
             author.username + "@mskcc.org",
         ]
         recipients = set(recipients)
@@ -165,7 +169,8 @@ def send_decision_notification(decision, decision_user, recipients, initial_auth
             + str(constants.user_training_string)
         )
         recipients = [
-            "patrunoa@mskcc.org",
+            "delbels@mskcc.org",
+            "mirhajf@mskcc.org",
             initial_author + "@mskcc.org",
         ]
         recipients = set(recipients)
@@ -222,3 +227,30 @@ def send_feedback(recipients, body, subject, type):
     s.close()
     log_email(msg.as_string(), "Feedback sent.", "Feedback ")
     return "done"
+
+def send_stop_processing_notification(decision, decision_user):
+    template = constants.stop_processing_notification_email_template_html
+    content = (
+            template["body"]
+            % (
+                decision.request_id,
+                decision_user.full_name,
+                decision.request_id,
+                decision.request_id,
+            )
+            + template["footer"]
+            + "<br><br>"
+            + str(constants.user_training_string)
+        )
+
+    msg = MIMEText(content, "html")
+    msg['Subject'] = template["subject"] % (decision.request_id, decision.report)
+    msg['From'] = NOTIFICATION_SENDER
+
+    # the email header's "to" field is for display only, the actual to address is in the sendmail() params
+    msg['To'] = IGO_BILLER
+
+    s = smtplib.SMTP('localhost')
+    s.sendmail(NOTIFICATION_SENDER, IGO_BILLER.split(","), msg.as_string())
+    s.close()
+    return "Sent notification to biller for manual charge addition." 

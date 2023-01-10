@@ -414,8 +414,11 @@ def set_qc_investigator_decision():
                 'message': "Failed to submit. Please contact an admin by emailing zzPDL_SKI_IGO_DATA@mskcc.org"
             }
             return make_response(jsonify(responseObject), 400, None)
-        else:
-
+        elif 'Stop processing' in decision_to_save.decisions:
+                notify.send_stop_processing_notification(
+                decision_to_save,
+                decision_user)
+        else:    
             notify.send_decision_notification(
                 decision_to_save,
                 decision_user,
