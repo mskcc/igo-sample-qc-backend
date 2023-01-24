@@ -228,7 +228,7 @@ def send_feedback(recipients, body, subject, type):
     log_email(msg.as_string(), "Feedback sent.", "Feedback ")
     return "done"
 
-def send_stop_processing_notification(decision, decision_user):
+def send_stop_processing_notification(decision, decision_user, recipients, initial_author):
     template = constants.stop_processing_notification_email_template_html
     content = (
             template["body"]
@@ -246,11 +246,18 @@ def send_stop_processing_notification(decision, decision_user):
     msg = MIMEText(content, "html")
     msg['Subject'] = template["subject"] % (decision.request_id, decision.report)
     msg['From'] = NOTIFICATION_SENDER
+    intial_author_email= initial_author + "@mskcc.org"
+    recipients.add(intial_author_email)
+    recipients.add(IGO_BILLER)
+    all_recipients = recipients.copy()
 
+    print('all recipients: ' + str(all_recipients))
+
+    if IGO_EMAIL in recipients:
+        recipients.discard(IGO_EMAIL)
     # the email header's "to" field is for display only, the actual to address is in the sendmail() params
-    msg['To'] = IGO_BILLER
-
+    msg['To'] = ', '.join(recipients)
     s = smtplib.SMTP('localhost')
-    s.sendmail(NOTIFICATION_SENDER, IGO_BILLER.split(","), msg.as_string())
+    s.sendmail(NOTIFICATION_SENDER, all_recipients, msg.as_string())
     s.close()
-    return "Sent notification to biller for manual charge addition." 
+    return "Sent notification to biller for manual charge addition."

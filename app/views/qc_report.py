@@ -417,7 +417,10 @@ def set_qc_investigator_decision():
         elif 'Stop processing' in decision_to_save.decisions:
                 notify.send_stop_processing_notification(
                 decision_to_save,
-                decision_user)
+                decision_user,
+                set(comment_relation.recipients.split(",")),
+                comment_relation.author,
+                )
         else:    
             notify.send_decision_notification(
                 decision_to_save,
