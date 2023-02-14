@@ -123,6 +123,18 @@ dnaColumns = {
         "data": "sourceSampleId",
         "columnHeader": "Source Sample ID",
         "readOnly": "true",
+    },
+    "A260230": {
+        "limsField": "A260230",
+        "data": "A260230",
+        "columnHeader": "260/230",
+        "readOnly": "true",
+    },
+    "A260280": {
+        "limsField": "A260280",
+        "data": "A260280",
+        "columnHeader": "260/280",
+        "readOnly": "true",
     }
 }
 
@@ -160,6 +172,18 @@ rnaColumns = {
         "limsField": "SourceSampleId",
         "data": "sourceSampleId",
         "columnHeader": "Source Sample ID",
+        "readOnly": "true",
+    },
+    "A260230": {
+        "limsField": "A260230",
+        "data": "A260230",
+        "columnHeader": "260/230",
+        "readOnly": "true",
+    },
+    "A260280": {
+        "limsField": "A260280",
+        "data": "A260280",
+        "columnHeader": "260/280",
         "readOnly": "true",
     }
 }
@@ -337,6 +361,8 @@ dnaOrder = [
     "TumorOrNormal",
     "Preservation",
     "SourceSampleId",
+    "A260230",
+    "A260280",
     "RecordId",
 ]
 
@@ -355,6 +381,8 @@ rnaOrder = [
     "Preservation",
     "Rqn",
     "SourceSampleId",
+    "A260230",
+    "A260280",
     "RecordId",
 ]
 
