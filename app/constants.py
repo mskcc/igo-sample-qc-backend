@@ -217,6 +217,12 @@ libraryColumns = {
         "data": "sourceSampleId",
         "columnHeader": "Source Sample ID",
         "readOnly": "true",
+    },
+    "NumOfReads": {
+        "limsField": "NumOfReads",
+        "data": "numOfReads",
+        "columnHeader": "Number of Reads",
+        "readOnly": "true",
     }
 }
 
@@ -400,6 +406,7 @@ libraryOrder = [
     "TumorOrNormal",
     "SourceSampleId",
     "RecordId",
+    "NumOfReads",
 ]
 
 poolOrder = [
