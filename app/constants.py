@@ -405,8 +405,8 @@ libraryOrder = [
     "TotalMass",
     "TumorOrNormal",
     "SourceSampleId",
-    "RecordId",
     "NumOfReads",
+    "RecordId",
 ]
 
 poolOrder = [
