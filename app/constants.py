@@ -250,6 +250,12 @@ poolColumns = {
         "trimDropdown": "false",
         "picklistName": "InvestigatorDecisionCustomers",
     },
+    "NumOfReads": {
+        "limsField": "NumOfReads",
+        "data": "numOfReads",
+        "columnHeader": "Number of Reads",
+        "readOnly": "true",
+    }
 }
 
 pathologyColumns = {
@@ -421,6 +427,7 @@ poolOrder = [
     "Volume",
     "TotalMass",
     "TumorOrNormal",
+    "NumOfReads",
     "RecordId",
 ]
 
