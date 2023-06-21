@@ -105,6 +105,7 @@ def get_request_samples():
                 responseData["request"]["investigatorName"] = lims_data[
                     "investigatorName"
                 ]
+                responseData["request"]["requestName"] = lims_data["requestName"]
 
                 responseData["recipients"]["IGOEmail"] = "zzPDL_IGO_Staff@mskcc.org"
                 responseData["recipients"]["LabHeadEmail"] = lims_data["labHeadEmail"]

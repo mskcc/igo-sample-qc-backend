@@ -217,6 +217,12 @@ libraryColumns = {
         "data": "sourceSampleId",
         "columnHeader": "Source Sample ID",
         "readOnly": "true",
+    },
+    "NumOfReads": {
+        "limsField": "NumOfReads",
+        "data": "numOfReads",
+        "columnHeader": "Number of Reads",
+        "readOnly": "true",
     }
 }
 
@@ -244,6 +250,12 @@ poolColumns = {
         "trimDropdown": "false",
         "picklistName": "InvestigatorDecisionCustomers",
     },
+    "NumOfReads": {
+        "limsField": "NumOfReads",
+        "data": "numOfReads",
+        "columnHeader": "Number of Reads",
+        "readOnly": "true",
+    }
 }
 
 pathologyColumns = {
@@ -399,6 +411,7 @@ libraryOrder = [
     "TotalMass",
     "TumorOrNormal",
     "SourceSampleId",
+    "NumOfReads",
     "RecordId",
 ]
 
@@ -414,6 +427,7 @@ poolOrder = [
     "Volume",
     "TotalMass",
     "TumorOrNormal",
+    "NumOfReads",
     "RecordId",
 ]
 
