@@ -739,7 +739,10 @@ def build_table(reportTable, samples, constantColumnFeatures, order, decisions=N
                         sample_field_value =  re.sub(r'-IGO-.*$', '', otherSampleId) 
                         responseSample[datafield] = sample_field_value
                     elif datafield == "igoQcRecommendation":
-                        recommendation = sample_field_value
+                        if sample_field_value == None:
+                            recommendation = ''
+                        else:
+                            recommendation = sample_field_value
 
                         responseSample[datafield] = "<div class=%s>%s</div>" % (
                             recommendation.lower(),
