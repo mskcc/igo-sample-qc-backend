@@ -135,6 +135,12 @@ dnaColumns = {
         "data": "A260280",
         "columnHeader": "260/280",
         "readOnly": "true",
+    },
+    "SizeBp": {
+        "limsField": "sizeBp",
+        "data": "sizeBp",
+        "columnHeader": "Size (bp)",
+        "readOnly": "true",
     }
 }
 
