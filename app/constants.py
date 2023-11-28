@@ -373,6 +373,7 @@ dnaOrder = [
     "Concentration",
     "Volume",
     "TotalMass",
+    "SizeBp",
     "Din",
     "SpecimenType",
     "HumanPercentage",
@@ -401,7 +402,6 @@ rnaOrder = [
     "SourceSampleId",
     "A260230",
     "A260280",
-    "SizeBp",
     "RecordId",
 ]
 
