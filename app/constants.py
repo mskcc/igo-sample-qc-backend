@@ -401,6 +401,7 @@ rnaOrder = [
     "SourceSampleId",
     "A260230",
     "A260280",
+    "SizeBp",
     "RecordId",
 ]
 
